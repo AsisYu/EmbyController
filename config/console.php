@@ -6,5 +6,6 @@ return [
     // 指令定义
     'commands' => [
         'websocket' => 'app\command\WebSocket',
+        'seed'      => 'app\command\Seed',
     ],
 ];
