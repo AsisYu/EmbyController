@@ -193,6 +193,8 @@ class User extends BaseController
             return redirect((string) url('media/user/index'));
         }
 
+        $registerOpen = env('REGISTER_OPEN', true);
+
         $sysConfigModel = new SysConfigModel();
         $avableRegisterCount = $sysConfigModel->where('key', 'avableRegisterCount')->find();
         if ($avableRegisterCount) {
@@ -206,7 +208,9 @@ class User extends BaseController
         $data = [];
         // 处理POST请求
         if (Request::isPost()) {
-            if ($avableRegisterCount <= 0 && $avableRegisterCount != -1) {
+            if (!$registerOpen) {
+                $results = "注册已关闭（管理员已关闭注册功能）";
+            } elseif ($avableRegisterCount <= 0 && $avableRegisterCount != -1) {
                 $results = "注册人数已达上限";
             } else {
                 // 验证输入数据
@@ -283,6 +287,7 @@ class User extends BaseController
         View::assign('sitekey', Config::get('apiinfo.cloudflareTurnstile.noninteractive.sitekey'));
         View::assign('enableEmail', Config::get('mailer.enable'));
         View::assign('avableRegisterCount', $avableRegisterCount);
+        View::assign('registerOpen', $registerOpen);
         return view();
     }
 
@@ -690,6 +695,10 @@ class User extends BaseController
         // 判断邮箱是否合法
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return json(['code' => 400, 'message' => '邮箱格式不正确']);
+        }
+
+        if ($action == 'register' && !env('REGISTER_OPEN', true)) {
+            return json(['code' => 400, 'message' => '注册已关闭（管理员已关闭注册功能）']);
         }
 
         $sysConfigModel = new SysConfigModel();

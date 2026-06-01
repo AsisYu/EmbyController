@@ -4,9 +4,13 @@ composer.phar
 composer.lock
 .DS_Store
 Thumbs.db
+CLAUDE.md
+/.CLAUDE
+/.claude
 /.idea
 /.vscode
 /vendor
 /.settings
 /.buildpath
 /.project
+/openspec

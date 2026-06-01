@@ -108,6 +108,8 @@ try {
         ]);
     }
 
+    define('REGISTER_OPEN', isset($dotenv['REGISTER_OPEN']) ? $dotenv['REGISTER_OPEN'] !== 'false' : true);
+
 } catch (\Exception $e) {
     die("加载配置错误: " . $e->getMessage() . "\n");
 }
@@ -1277,7 +1279,7 @@ function checkConfigDatabase()
     // 检查config表，查询全部数据
     $config = Db::name('config')->select();
     $data = [
-        'avableRegisterCount' => 0,
+        'avableRegisterCount' => REGISTER_OPEN ? -1 : 0,
         'chargeRate' => 1,
         'sysnotificiations' => '您有一条新消息：{Message}',
         'findPasswordTemplate' => '您的找回密码链接是：<a href="{Url}">{Url}</a>',

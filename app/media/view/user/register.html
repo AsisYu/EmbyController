@@ -112,13 +112,17 @@
                 </div>
                 {/if}
 
-                {if condition="$avableRegisterCount && $avableRegisterCount > 0"}
+                {if condition="!$registerOpen"}
+                <div class="mb-6">
+                    <span style="color:red; ">注册已关闭（管理员已关闭注册功能）</span>
+                </div>
+                {elseif condition="$avableRegisterCount && $avableRegisterCount > 0"}
                 <div class="mb-6">
                     <span style="color:#0aa937; ">剩余可注册数：{$avableRegisterCount}</span>
                 </div>
                 {elseif condition="$avableRegisterCount == 0"}
                 <div class="mb-6">
-                    <span style="color:red; ">注册已关闭</span>
+                    <span style="color:red; ">注册已关闭（名额已满）</span>
                 </div>
                 {elseif condition="$avableRegisterCount == -1"}
                 {/if}

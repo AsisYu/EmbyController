@@ -110,6 +110,13 @@ class UserModel extends Model
         $user->rCoin = 0;
         $user->email = $email;
 
+        if (!env('REGISTER_OPEN', true)) {
+            return [
+                'error' => '注册已关闭（管理员已关闭注册功能）',
+                'user' => null
+            ];
+        }
+
         $sysConfigModel = new SysConfigModel();
         // 注册用户后可用注册数减一
         if (!$sysConfigModel->where('key', 'avableRegisterCount')->find()) {
