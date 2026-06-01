@@ -22,7 +22,7 @@ use WebSocket\Client;
 function getGravatar($email, $s = 96, $d = 'mp', $r = 'g', $img = false, $atts = array())
 {
     preg_match_all('/((\d)*)@qq.com/', $email, $vai);
-    if (empty($vai['1']['0'])) {
+    if (!isset($vai['1']['0']) || $vai['1']['0'] === '') {
         // 使用Gravatar服务
         $url = 'https://www.gravatar.com/avatar/';
         $url .= md5(strtolower(trim($email)));

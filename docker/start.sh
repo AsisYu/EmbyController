@@ -13,7 +13,19 @@ find /app -path /app/.env -prune -o -exec chown www-data:www-data {} \;
 # 读取 .env 文件并导出环境变量
 if [ -f /app/.env ]; then
     echo "Loading environment variables from .env file..."
-    export $(grep -v '^#' /app/.env | grep -E '^[A-Za-z_][A-Za-z0-9_]*=.*$' | xargs)
+    # 逐行读取 .env 以避免 xargs 空格/特殊字符截断
+    while IFS= read -r line; do
+        key="${line%%=*}"
+        key="${key#"${key%%[![:space:]]*}"}"
+        key="${key%"${key##*[![:space:]]}"}"
+        case "$key" in ''|\#*) continue ;; esac
+        value="${line#*=}"
+        value="${value# }"
+        value="${value#"${value%%[![:space:]]*}"}"
+        value="${value%"${value##*[![:space:]]}"}"
+        value=$(echo "$value" | sed -e 's/^["\x27]//' -e 's/["\x27]$//')
+        export "${key}=${value}"
+    done < /app/.env
 else
     echo ".env file not found, skipping environment variable loading"
 fi
