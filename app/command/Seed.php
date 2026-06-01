@@ -28,7 +28,7 @@ class Seed extends Command
                 'nickName' => 'admin',
                 'password' => '$2y$10$rJff.jXkgLpFBN0qE9B.Uu/gnlH2WsUqblAMJOH4iNg7w7OjKJZG6',
                 'authority' => 0,
-                'email'    => 'randall@randallanjie.com',
+                'email'    => env('ADMIN_EMAIL', 'admin@admin.com'),
                 'rCoin'    => 0,
             ]);
             $output->writeln('管理员账户已创建: admin / A123456');

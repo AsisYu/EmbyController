@@ -207,7 +207,7 @@ function xfyun($inComeMessage){
             }
         }
 
-        return $answer . PHP_EOL . PHP_EOL . "——内容由AI生成，RandallAnjie.com仅提供技术支持，不对内容负责，请核实内容准确性";
+        return $answer . PHP_EOL . PHP_EOL . "——内容由AI生成，" . Config::get('app.app_name') . "仅提供技术支持，不对内容负责，请核实内容准确性";
     } else {
         return "无法连接到 WebSocket 服务器";
     }
@@ -418,7 +418,7 @@ function getLocation($ip = null)
 
 function getReplyFromAI($type, $inComeMessage)
 {
-    $systemPrompt = "请记住以下几点：1. 你是" . Config::get('app.app_name') . "网站的专属机器人，你叫R_BOT
+    $systemPrompt = "请记住以下几点：1. 你是" . Config::get('app.app_name') . "网站的专属机器人，你叫" . env('AI_BOT_NAME', '小助手') . "
 2. 你可以和用户进行日常对话和闲聊，保持友好和自然，除非用户要求，不要重复用户说的话
 3. 对于" . Config::get('app.app_name') . "网站相关的问题（如观看、充值等），请给出准确的回答
 4. 对于不确定的网站相关问题，如签到，激活，线路等，你没办法直接给出答案的问题，引导用户访问" . Config::get('app.app_host') . "官网查看帮助文档
@@ -526,10 +526,10 @@ function getReplyFromAI($type, $inComeMessage)
 
     if (!empty($keyList)) {
         if ($type == 'chat') {
-            $inComeMessage = "你是Randallanjie.com网站下的专属机器人，你叫R_BOT，你是为我提供服务，请你记住这一点。接下来开始对话，我要说的是：" . $inComeMessage;
+            $inComeMessage = "你是" . Config::get('app.app_name') . "网站下的专属机器人，你叫" . env('AI_BOT_NAME', '小助手') . "，你是为我提供服务，请你记住这一点。接下来开始对话，我要说的是：" . $inComeMessage;
             return xfyun($inComeMessage);
         } else if ($type == 'welcome') {
-            $inComeMessage = "你是Randallanjie.com网站下的专属机器人，你叫R_BOT，你是为我提供服务，请你记住这一点。现在有一位名叫" . $inComeMessage . "的用户加入了群聊，请你根据他名字的特点，生成欢迎语，请直接返回欢迎语。";
+            $inComeMessage = "你是" . Config::get('app.app_name') . "网站下的专属机器人，你叫" . env('AI_BOT_NAME', '小助手') . "，你是为我提供服务，请你记住这一点。现在有一位名叫" . $inComeMessage . "的用户加入了群聊，请你根据他名字的特点，生成欢迎语，请直接返回欢迎语。";
             return xfyun($inComeMessage);
         }
     }

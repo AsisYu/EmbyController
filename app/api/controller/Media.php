@@ -374,7 +374,7 @@ class Media extends BaseController
                                         }
                                         if ($msg != '') {
                                             sendStationMessage($user['id'], $msg);
-                                            $telegramToken = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+                                            $telegramToken = Config::get('telegram.botConfig.bots.default.token');
                                             if ($telegramToken != 'notgbot') {
                                                 $telegramModel = new TelegramModel();
                                                 $telegramUser = $telegramModel->where('userId', $user['id'])->find();
@@ -408,7 +408,7 @@ class Media extends BaseController
         } catch (\Exception $exception) {
             $message = '第' . $exception->getLine() . '行发生错误：' . $exception->getMessage();
             // 错误内容
-            $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+            $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
             $telegram->sendMessage([
                 'chat_id' => Config::get('telegram.adminId'),
                 'text' => $message . PHP_EOL . 'get: ' . json_encode(Request::get()) . PHP_EOL . 'post: ' . json_encode(Request::post()),

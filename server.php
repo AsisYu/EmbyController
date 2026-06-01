@@ -1248,7 +1248,7 @@ function checkBetResult() {
 }
 
 function runCrontab() {
-    // 如果在容器中运行，就访问127.0.0.1:8018，否则访问 APP_HOST = https://randallanjie.com
+    // 如果在容器中运行，就访问127.0.0.1:8018，否则访问 APP_HOST
     if (RUN_IN_DOCKER) {
         $host = 'http://127.0.0.1:8018';
     } else {

@@ -20,7 +20,7 @@ class DeleteTelegramMessage
             $messageId = $data['message_id'];
             
             // 获取Telegram Bot Token
-            $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+            $token = Config::get('telegram.botConfig.bots.default.token');
             if (!$token || $token == 'notgbot') {
                 $job->delete();
                 return;

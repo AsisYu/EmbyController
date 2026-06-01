@@ -11,7 +11,7 @@ use WebSocket\Client;
 
 function sendTGMessage($id, $message)
 {
-    $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+    $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
     $telegramUserModel = new TelegramModel();
     $telegramUser = $telegramUserModel->where('userId', $id)->find();
     if ($telegramUser) {
@@ -30,7 +30,7 @@ function sendTGMessageToGroup($message)
 {
     $groupSetting = Config::get('telegram.groupSetting');
     if (isset($groupSetting['allow_notify']) && $groupSetting['allow_notify']) {
-        $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+        $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
         $telegram->sendMessage([
             'chat_id' => $groupSetting['chat_id'],
             'text' => $message,

@@ -474,10 +474,10 @@ class User extends BaseController
         }
         View::assign('userInfo', $userInfoArray);
 
-        if (!Config::get('telegram.botConfig.bots.randallanjie_bot.token') ||
-            Config::get('telegram.botConfig.bots.randallanjie_bot.token') == '' ||
-            Config::get('telegram.botConfig.bots.randallanjie_bot.token') == null ||
-            Config::get('telegram.botConfig.bots.randallanjie_bot.token') == 'notgbot') {
+        if (!Config::get('telegram.botConfig.bots.default.token') ||
+            Config::get('telegram.botConfig.bots.default.token') == '' ||
+            Config::get('telegram.botConfig.bots.default.token') == null ||
+            Config::get('telegram.botConfig.bots.default.token') == 'notgbot') {
             View::assign('enableTelegram', false);
             View::assign('tgNotification', false);
             View::assign('tgUser', null);
@@ -495,7 +495,7 @@ class User extends BaseController
                 }
 
                 // 获取tg用户信息
-                $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+                $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
                 $tgUser = $telegram->getChat(['chat_id' => $telegramUser['telegramId']]);
                 if ($tgUser) {
                     $tgUserInfoArray['tgUser'] = $tgUser;

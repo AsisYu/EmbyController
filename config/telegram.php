@@ -4,9 +4,9 @@ return [
     // 机器人设置
     'botConfig' => [
         'bots' => [
-            'randallanjie_bot' => [
+            'default' => [
                 'token' => env('TG_BOT_TOKEN', 'notgbot'),
-                'username' => env('TG_BOT_USERNAME', 'randallanjie_bot'),
+                'username' => env('TG_BOT_USERNAME', ''),
             ],
         ]
     ],

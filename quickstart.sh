@@ -51,10 +51,10 @@ mkdir -p EmbyController
 cd EmbyController
 
 # 下载 .env 文件
-curl -o .env https://raw.githubusercontent.com/RandallAnjie/EmbyController/refs/heads/main/example.env
+curl -o .env https://raw.githubusercontent.com/AsisYu/EmbyController/refs/heads/main/example.env
 
 # 下载 docker-compose.yml 文件
-curl -o docker-compose.yml https://raw.githubusercontent.com/RandallAnjie/EmbyController/refs/heads/main/docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/AsisYu/EmbyController/refs/heads/main/docker-compose.yml
 
 # 让用户选择使用 Docker 还是 Docker Compose
 while true; do

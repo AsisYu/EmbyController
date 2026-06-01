@@ -86,7 +86,7 @@ class Telegram extends BaseController
 
     public function restartWebHook()
     {
-        $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+        $token = Config::get('telegram.botConfig.bots.default.token');
         $weburl = Config::get('app.app_host');
         if ($token == 'notgbot') {
             return '请先配置Telegram机器人';
@@ -102,7 +102,7 @@ class Telegram extends BaseController
 
     public function listenWebHook()
     {
-        $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+        $token = Config::get('telegram.botConfig.bots.default.token');
         if ($token == 'notgbot') {
             return '请先配置Telegram机器人';
         }
@@ -164,7 +164,7 @@ class Telegram extends BaseController
                         $command = substr($sendInMsg, $entity['offset'], $entity['length']);
                         // 处理带有@username的命令
                         $commandParts = explode('@', $command);
-                        if (count($commandParts) > 1 && $commandParts[1] == 'randallanjie_bot') {
+                        if (count($commandParts) > 1 && $commandParts[1] == Config::get('telegram.botConfig.bots.default.username')) {
                             $atFlag = true;
                         }
                         $commonds[] = $commandParts[0];  // 只保留命令部分
@@ -172,7 +172,7 @@ class Telegram extends BaseController
                     } else if ($entity['type'] == 'mention') {
                         $mention = substr($tgMsg['message']['text'], $entity['offset'], $entity['length']);
                         $sendInMsg = substr($sendInMsg, 0, $entity['offset']) . substr($sendInMsg, $entity['offset'] + $entity['length']);
-                        if ($mention == '@randallanjie_bot') {  // 更新为您的机器人用户名
+                        if ($mention == '@' . Config::get('telegram.botConfig.bots.default.username')) {
                             $atFlag = true;
                         }
                     }
@@ -269,7 +269,7 @@ class Telegram extends BaseController
                 $isReplyToBot = false;
                 if (isset($tgMsg['message']['reply_to_message'])
                     && isset($tgMsg['message']['reply_to_message']['from']['username'])
-                    && $tgMsg['message']['reply_to_message']['from']['username'] == Config::get('telegram.botConfig.bots.randallanjie_bot.username')
+                    && $tgMsg['message']['reply_to_message']['from']['username'] == Config::get('telegram.botConfig.bots.default.username')
 //                    && isset($tgMsg['message']['reply_to_message']['text'])
                 ) {
                     try {
@@ -326,7 +326,7 @@ class Telegram extends BaseController
                             }
                         }
                     } catch (\Exception $e) {
-                        $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+                        $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
                         $telegram->sendMessage([
                             'chat_id' => Config::get('telegram.adminId'),
                             'text' => '回复消息处理失败：' . $e->getMessage() . '行数：' . $e->getLine(),
@@ -634,7 +634,7 @@ class Telegram extends BaseController
 //                                        }
 //
 //                                        // 发送私信给管理员
-//                                        $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+//                                        $token = Config::get('telegram.botConfig.bots.default.token');
 //                                        if ($token) {
 //                                            $telegram = new Api($token);
 //                                            $telegram->sendMessage([
@@ -883,7 +883,7 @@ class Telegram extends BaseController
         } catch (\Exception $exception) {
             $message = '第' . $exception->getLine() . '行发生错误：' . $exception->getMessage();
             // 错误内容
-            $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+            $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
             $telegram->sendMessage([
                 'chat_id' => Config::get('telegram.adminId'),
                 'text' => $message . PHP_EOL . 'get: ' . json_encode(Request::get()) . PHP_EOL . 'post: ' . json_encode(Request::post()),
@@ -901,7 +901,7 @@ class Telegram extends BaseController
 
     private function replayMessage($result)
     {
-        $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+        $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
         try {
             $response = $telegram->sendMessage([
                 'chat_id' => $this->chat_id,
@@ -958,7 +958,7 @@ class Telegram extends BaseController
         if ($user) {
             $message .= '尊敬的用户 <strong>' . ($user['nickName']??$user['userName']) . '</strong> ';
         }
-        $message .= '您好，欢迎使用 @randallanjie_bot' . PHP_EOL;
+        $message .= '您好，欢迎使用 @' . Config::get('telegram.botConfig.bots.default.username') . PHP_EOL;
         if ($telegramId != $this->chat_id) {
 //            $message .= '当前群组ID是：<code>' . $this->chat_id . '</code>' . PHP_EOL;
         } else {
@@ -1097,7 +1097,7 @@ class Telegram extends BaseController
                     $signKey = substr(md5(time()), 8, 8);
                     Cache::set('get_sign_' . $signKey, $randStr, 300);
                     Cache::set('post_signkey_' . $randStr, $user['id'], 300);
-                    return '请点击链接签到：<a href="https://randallanjie.com/index/account/sign?signkey=' . $signKey . '">点击签到</a>';
+                    return '请点击链接签到：<a href="' . Config::get('app.app_host') . '/index/account/sign?signkey=' . $signKey . '">点击签到</a>';
                 } else {
                     return '您今天已签到～';
                 }
@@ -1111,7 +1111,7 @@ class Telegram extends BaseController
     {
         // 获取get参数
         $data = Request::get();
-        $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+        $token = Config::get('telegram.botConfig.bots.default.token');
         // 判断是否有参数
         if (isset($data['key']) && isset($data['message']) && $data['key'] == Config::get('media.crontabKey') && $token != 'notgbot') {
             $groupSetting = Config::get('telegram.groupSetting');
@@ -1148,7 +1148,7 @@ class Telegram extends BaseController
         Cache::set($key, $history, 24 * 3600);
 
         // 发送调试信息
-//        $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+//        $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
 //        $telegram->sendMessage([
 //            'chat_id' => Config::get('telegram.adminId'),
 //            'text' => "添加新消息到历史记录：\n聊天ID: {$chatId}\n发送者ID: {$fromId}\n消息内容: {$message}\n当前历史记录数量: " . count($history),
@@ -1172,7 +1172,7 @@ class Telegram extends BaseController
         }
 
         // 发送调试信息
-//        $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+//        $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
 //        $telegram->sendMessage([
 //            'chat_id' => Config::get('telegram.adminId'),
 //            'text' => "获取历史记录：\n聊天ID: {$chatId}\n历史记录数量: " . count($history) . "\n完整历史记录：\n" . $formattedHistory,
@@ -1482,7 +1482,7 @@ class Telegram extends BaseController
         } else {
             // 如果是用户名，需要先通过API获取用户ID
             try {
-                $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+                $token = Config::get('telegram.botConfig.bots.default.token');
                 if (!$token) {
                     throw new \Exception("Telegram bot token not found");
                 }
@@ -1547,7 +1547,7 @@ class Telegram extends BaseController
 
             // 发送通知给接收方
             try {
-                $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+                $token = Config::get('telegram.botConfig.bots.default.token');
                 if ($token) {
                     $telegram = new Api($token);
                     $msg = "您收到一笔转账：\n\n" .
@@ -1562,7 +1562,7 @@ class Telegram extends BaseController
             }  catch (\Exception $exception) {
                 $message = '第' . $exception->getLine() . '行发生错误：' . $exception->getMessage();
                 // 错误内容
-                $telegram = new Api(Config::get('telegram.botConfig.bots.randallanjie_bot.token'));
+                $telegram = new Api(Config::get('telegram.botConfig.bots.default.token'));
                 $telegram->sendMessage([
                     'chat_id' => Config::get('telegram.adminId'),
                     'text' => $message . PHP_EOL . 'get: ' . json_encode(Request::get()) . PHP_EOL . 'post: ' . json_encode(Request::post()),

@@ -44,5 +44,18 @@ return [
     // 显示错误信息
     'show_error_msg'   => false,
 
-    'app_name' => env('APP_NAME', '算艺轩'),
+    'app_name' => env('APP_NAME', 'EmbyController'),
+
+    // 通知脚本URL
+    'notification_script_url' => env('NOTIFICATION_SCRIPT_URL', ''),
+    // 项目仓库地址
+    'project_repo_url' => env('PROJECT_REPO_URL', ''),
+    // Telegram群组链接
+    'tg_group_url' => env('TG_GROUP_URL', ''),
+    // 站点品牌名称
+    'site_brand_name' => env('SITE_BRAND_NAME', 'EmbyController'),
+    // 公司名称
+    'company_name' => env('COMPANY_NAME', ''),
+    // 技术支持名称
+    'tech_support_name' => env('TECH_SUPPORT_NAME', 'EmbyController'),
 ];

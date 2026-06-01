@@ -7,10 +7,11 @@ class AddInitialAdminUser extends Migrator
     public function up()
     {
         $password = '$2y$10$rJff.jXkgLpFBN0qE9B.Uu/gnlH2WsUqblAMJOH4iNg7w7OjKJZG6';
+        $email = env('ADMIN_EMAIL', 'admin@admin.com');
         $sql = "INSERT INTO `{$this->getTable('user')}` ("
              . "`userName`, `nickName`, `password`, `authority`, `email`, `rCoin`"
              . ") VALUES ("
-             . "'admin', 'admin', '{$password}', 0, 'randall@randallanjie.com', 0"
+             . "'admin', 'admin', '{$password}', 0, '{$email}', 0"
              . ");";
         $this->execute($sql);
     }

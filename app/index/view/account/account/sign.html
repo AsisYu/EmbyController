@@ -9,7 +9,7 @@
     {if condition="$sitekey && $sitekey != ''"}
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" defer></script>
     {/if}
-    <script src="https://notification.randallanjie.com/r_notification.js"></script>
+    <script src="{:config('app.notification_script_url')}"></script>
     <script src="/assets/index/js/jquery-3.7.1.min.js"></script>
     <style>
         body {

@@ -815,10 +815,10 @@ class Admin extends BaseController
             ->select();
 
         $enableBot = true;
-        if (!Config::get('telegram.botConfig.bots.randallanjie_bot.token') ||
-            Config::get('telegram.botConfig.bots.randallanjie_bot.token') == '' ||
-            Config::get('telegram.botConfig.bots.randallanjie_bot.token') == null ||
-            Config::get('telegram.botConfig.bots.randallanjie_bot.token') == 'notgbot') {
+        if (!Config::get('telegram.botConfig.bots.default.token') ||
+            Config::get('telegram.botConfig.bots.default.token') == '' ||
+            Config::get('telegram.botConfig.bots.default.token') == null ||
+            Config::get('telegram.botConfig.bots.default.token') == 'notgbot') {
             $enableBot = false;
         }
 

@@ -396,7 +396,7 @@ if (!function_exists('echo_value')) {
     <?php } ?>
 
     <div class="copyright">
-        Powered By <a title="randallanjie" href="https://randallanjie.com">Randallanjie.com</a>
+        Powered By {:config('app.tech_support_name')}
     </div>
     <?php if (\think\facade\App::isDebug()) { ?>
     <script>

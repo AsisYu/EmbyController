@@ -12,7 +12,7 @@ use WebSocket\Client;
 
 function sendTGMessage($id, $message)
 {
-    $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+    $token = Config::get('telegram.botConfig.bots.default.token');
     if ($token == 'notgbot') {
         return;
     }
@@ -33,7 +33,7 @@ function sendTGMessage($id, $message)
 
 function sendTGMessageToGroup($message)
 {
-    $token = Config::get('telegram.botConfig.bots.randallanjie_bot.token');
+    $token = Config::get('telegram.botConfig.bots.default.token');
     if ($token == 'notgbot') {
         return null;
     }

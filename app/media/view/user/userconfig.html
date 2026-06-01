@@ -288,7 +288,7 @@
             if(res.code == 200){
                 $('#get-bind-code').text('重新获取绑定码');
                 rStatusMessage.success('获取绑定码成功，请根据操作进行绑定');
-                var element = '<p>请使用链接<a href="https://t.me/<?php echo config('telegram.botConfig.bots.randallanjie_bot.username'); ?>?start=' + res.data + '" target="_blank">https://t.me/<?php echo config('telegram.botConfig.bots.randallanjie_bot.username'); ?>?start=' + res.data + '</a>绑定Telegram账号</p><p>如果你已经与机器人对话过，你也可以使用命令 /bind ' + res.data + ' 绑定Telegram账号</p>';
+                var element = '<p>请使用链接<a href="https://t.me/<?php echo config('telegram.botConfig.bots.default.username'); ?>?start=' + res.data + '" target="_blank">https://t.me/<?php echo config('telegram.botConfig.bots.default.username'); ?>?start=' + res.data + '</a>绑定Telegram账号</p><p>如果你已经与机器人对话过，你也可以使用命令 /bind ' + res.data + ' 绑定Telegram账号</p>';
                 $('#bind-link-here').html(element);
             }else{
                 rStatusMessage.error(res.message);
