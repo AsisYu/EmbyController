@@ -24,7 +24,7 @@ chmod -R 755 /app/runtime
 # 检查是否存在迁移文件
 if [ -d "/app/database/migrations" ] && [ "$(ls -A /app/database/migrations)" ]; then
     echo "Running database migrations..."
-    php think migrate:run
+    php think migrate:run || echo "Migration skipped (tables may already exist)"
 else
     echo "No migrations found, skipping migration step"
 fi

@@ -1302,7 +1302,7 @@ function checkConfigDatabase()
                 break;
             }
         }
-        if (!$found && !empty($key) && !empty($value)) {
+        if (!$found && !empty($key) && $value !== '') {
             // 插入
             Db::name('config')->insert([
                 'key' => $key,

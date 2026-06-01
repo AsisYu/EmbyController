@@ -119,13 +119,6 @@ class UserModel extends Model
 
         $sysConfigModel = new SysConfigModel();
         // 注册用户后可用注册数减一
-        if (!$sysConfigModel->where('key', 'avableRegisterCount')->find()) {
-            $sysConfigModel->save([
-                'key' => 'avableRegisterCount',
-                'value' => '0'
-            ]);
-        }
-
         $config = $sysConfigModel->where('key', 'avableRegisterCount')->find();
         if ($config) {
             if ((int)$config->value <= 0 && (int)$config->value != -1) {
