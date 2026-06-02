@@ -784,5 +784,89 @@ function renderSearchResults(results) {
 </script>
 {/if}
 {include file='public/_holidayjs' /}
+<script>
+(function() {
+    var mainContent = document.getElementById('mainContent');
+    var sideMenu = document.getElementById('sideMenu');
+
+    function updateSidebarHighlight(path) {
+        var links = sideMenu.getElementsByTagName('a');
+        for (var i = 0; i < links.length; i++) {
+            var href = links[i].getAttribute('href');
+            if (href === path || path.indexOf(href) === 0) {
+                links[i].classList.add('bg-white/10');
+            } else {
+                links[i].classList.remove('bg-white/10');
+            }
+        }
+    }
+
+    function executeScripts(container) {
+        var scripts = container.querySelectorAll('script');
+        scripts.forEach(function(oldScript) {
+            var newScript = document.createElement('script');
+            for (var i = 0; i < oldScript.attributes.length; i++) {
+                newScript.setAttribute(oldScript.attributes[i].name, oldScript.attributes[i].value);
+            }
+            newScript.textContent = oldScript.textContent;
+            oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+    }
+
+    function pjaxNavigate(url) {
+        startMainLoading();
+        fetch(url, { headers: { 'X-PJAX': '1' } })
+            .then(function(response) {
+                if (!response.ok) { window.location.href = url; return; }
+                return response.text();
+            })
+            .then(function(html) {
+                if (!html) return;
+                // 检测是否为完整 HTML 页面（不支持 PJAX 的页面）
+                if (html.trim().indexOf('<!DOCTYPE') === 0 || html.trim().indexOf('<html') === 0) {
+                    document.open();
+                    document.write(html);
+                    document.close();
+                    return;
+                }
+                var titleMatch = html.match(/<title>(.*?)<\/title>/i);
+                if (titleMatch) { document.title = titleMatch[1]; }
+                var contentDiv = mainContent.querySelector('.glass-effect');
+                contentDiv.innerHTML = html;
+                executeScripts(contentDiv);
+                history.pushState({ url: url }, '', url);
+                updateSidebarHighlight(url);
+                window.scrollTo(0, 0);
+                stopMainLoading();
+            })
+            .catch(function() { window.location.href = url; });
+    }
+
+    sideMenu.addEventListener('click', function(e) {
+        var link = e.target.closest('a');
+        if (!link) return;
+        var href = link.getAttribute('href');
+        if (!href || !href.startsWith('/media/')) return;
+        e.preventDefault();
+        pjaxNavigate(href);
+    });
+
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.url) {
+            fetch(e.state.url, { headers: { 'X-PJAX': '1' } })
+                .then(function(r) { return r.text(); })
+                .then(function(html) {
+                    var cd = mainContent.querySelector('.glass-effect');
+                    cd.innerHTML = html;
+                    executeScripts(cd);
+                    updateSidebarHighlight(e.state.url);
+                    stopMainLoading();
+                });
+        } else {
+            window.location.reload();
+        }
+    });
+})();
+</script>
 </body>
 </html>

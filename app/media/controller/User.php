@@ -77,6 +77,12 @@ class User extends BaseController
         View::assign('rUser', $rUser);
         View::assign('embyId', $embyId);
         View::assign('activateTo', $activateTo);
+
+        // PJAX 请求：不套用布局，只返回内容片段
+        if ($this->request->header('X-PJAX') == '1') {
+            \think\facade\Config::set(['layout_on' => false], 'view');
+        }
+
         return view();
     }
 
