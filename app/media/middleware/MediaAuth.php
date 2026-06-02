@@ -27,20 +27,22 @@ class MediaAuth
             Session::set('r_user', $user);
         }
         View::assign('user', $user);
-        // 获取当前请求的 URL 路径
-        $url = $request->url(true);
+        // 获取当前请求的 URL 路径（不带域名，避免反向代理下 HTTP_HOST 不可靠）
+        $url = $request->url();
 
-        // url 去掉域名部分
-        $url = str_replace('http://'.$_SERVER['HTTP_HOST'], '', $url);
-        $url = str_replace('https://'.$_SERVER['HTTP_HOST'], '', $url);
-
-        // 去掉查询参数，避免 /media/user/login?redirect=xxx 无法匹配
+        // 去掉查询参数
         $urlPath = parse_url($url, PHP_URL_PATH);
         if ($urlPath) {
             $url = $urlPath;
         }
 
-        if ($url == '/media' || $url == '/media/') {
+        // 去掉尾部斜杠
+        $url = rtrim($url, '/');
+        if ($url === '') {
+            $url = '/';
+        }
+
+        if ($url == '/media') {
             $url = '/media/index/index';
         }
 
@@ -68,12 +70,12 @@ class MediaAuth
             }
         }
         if ((empty($user)) && !$flag) {
-            Session::set('jumpUrl', $request->url(true));
+            Session::set('jump_url', $request->url(true));
             return redirect((string)url('/media/user/login'));
         }
         if (isset($user['authority']) && $user['authority'] < 0) {
             Session::delete('r_user');
-            Session::set('jumpUrl', $request->url(true));
+            Session::set('jump_url', $request->url(true));
             return redirect((string)url('/media/user/login'));
         }
 
