@@ -14,10 +14,10 @@ namespace think;
 
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../app/env.php';
 
-use Dotenv\Dotenv;
-$dotenv = Dotenv::createImmutable(__DIR__ . '/../', '.env', false);
-$dotenv->safeLoad();
+// 加载 .env 配置到环境变量
+loadEnvFile(__DIR__ . '/../');
 
 // 执行HTTP应用并响应
 $http = (new App())->http;
