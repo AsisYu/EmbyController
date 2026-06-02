@@ -967,13 +967,14 @@ class User extends BaseController
                 ->join('rc_media_info m', 'm.id = c.mediaId')
                 ->field('c.mediaId, m.mediaName, m.mediaYear, m.mediaType, m.mediaMainId, AVG(c.rating) as averageRating, COUNT(c.id) as commentCount')
                 ->group('c.mediaId')
-                ->order('c.id', 'desc')
+                ->orderRaw('MAX(c.id) DESC')
                 ->limit($offset, $pagesize)
                 ->select()
                 ->toArray();
 
             return json(['code' => 200, 'message' => '获取成功', 'data' => $comments]);
         }
+        return json(['code' => 405, 'message' => '请求方法不允许'], 405);
     }
 
     public function getComments()
