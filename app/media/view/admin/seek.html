@@ -166,16 +166,16 @@ function renderSeekList(list) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="py-3 px-4">${item.id}</td>
-            <td class="py-3 px-4">${item.title}</td>
-            <td class="py-3 px-4">${item.nickName || item.userName}</td>
+            <td class="py-3 px-4">${escapeHtml(item.title)}</td>
+            <td class="py-3 px-4">${escapeHtml(item.nickName || item.userName)}</td>
             <td class="py-3 px-4">${item.seekCount}</td>
-            <td class="py-3 px-4">${item.createdAt}</td>
+            <td class="py-3 px-4">${escapeHtml(item.createdAt)}</td>
             <td class="py-3 px-4">
                 ${getStatusBadge(item.status, item.statusRemark)}
             </td>
-            <td class="py-3 px-4">${item.description || '-'}</td>
+            <td class="py-3 px-4">${escapeHtml(item.description || '-')}</td>
             <td class="py-3 px-4">
-                <button onclick="openStatusDialog(${item.id}, ${item.status}, '${item.statusRemark || ''}')" class="text-blue-400 hover:text-blue-300">
+                <button onclick="openStatusDialog(${item.id}, ${item.status}, '${escapeJsString(item.statusRemark || '')}')" class="text-blue-400 hover:text-blue-300">
                     更新状态
                 </button>
             </td>
@@ -191,7 +191,7 @@ function getStatusBadge(status, remark) {
         1: '<span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">管理员已确认</span>',
         2: '<span class="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">正在收集资源</span>',
         3: '<span class="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">已入库</span>',
-        '-1': `<span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-sm cursor-help" title="${remark || '暂无原因'}">暂不收录</span>`
+        '-1': `<span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-sm cursor-help" title="${escapeHtml(remark || '暂无原因')}">暂不收录</span>`
     };
     return badges[status] || badges[0];
 }

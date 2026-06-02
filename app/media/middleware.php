@@ -7,6 +7,7 @@ return [
      \think\middleware\LoadLangPack::class,
     // Session初始化
      \think\middleware\SessionInit::class,
+    \app\media\middleware\Csrf::class,
     'MediaAuth' => \app\media\middleware\MediaAuth::class,
     'RealIp' => \app\media\middleware\RealIp::class,
     'CorsMiddleware' => \app\media\middleware\SystemCheck::class,

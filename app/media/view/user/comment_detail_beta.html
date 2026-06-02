@@ -212,21 +212,21 @@
 
         let quotedHtml = '';
         if (comment.quotedComment) {
-            let quotedComment = comment.quotedComment.comment;
+            let quotedComment = escapeHtml(comment.quotedComment.comment);
             for (const mention of comment.quotedComment.mentions) {
-                quotedComment = quotedComment.replaceAll('@#'+mention.id+'# ', `<span class="text-blue-400 cursor-pointer" onclick="showUserProfile('${mention.id}')">@${mention.username} </span>`);
+                quotedComment = quotedComment.replaceAll('@#'+mention.id+'# ', `<span class="text-blue-400 cursor-pointer" onclick="showUserProfile('${escapeJsString(mention.id)}')">@${escapeHtml(mention.username)} </span>`);
             }
             quotedHtml = `
-            <div class="bg-white/10 p-3 rounded-lg mb-3 cursor-pointer" onclick="showQuotedComment('${comment.quotedComment.id}')">
-              <p class="text-sm text-white/60">引用 ${comment.quotedComment.username} 的评论：</p>
+            <div class="bg-white/10 p-3 rounded-lg mb-3 cursor-pointer" onclick="showQuotedComment('${escapeJsString(comment.quotedComment.id)}')">
+              <p class="text-sm text-white/60">引用 ${escapeHtml(comment.quotedComment.username)} 的评论：</p>
               <p class="text-white/80 mini-quot">${quotedComment}</p>
             </div>
           `;
         }
 
-        let commentText = comment.comment;
+        let commentText = escapeHtml(comment.comment);
         for (const mention of comment.mentions) {
-            commentText = commentText.replaceAll('@#'+mention.id+'# ', `<span class="text-blue-400 cursor-pointer" onclick="showUserProfile('${mention.id}')">@${mention.username} </span>`);
+            commentText = commentText.replaceAll('@#'+mention.id+'# ', `<span class="text-blue-400 cursor-pointer" onclick="showUserProfile('${escapeJsString(mention.id)}')">@${escapeHtml(mention.username)} </span>`);
         }
 
         div.innerHTML = `
@@ -234,18 +234,18 @@
             <div>
                 <div class="flex items-center space-x-2">
                   <img src="/api/common/getHeadImg?id=${comment.userId}size=100" class="w-8 h-8 rounded-full">
-                  <span class="font-semibold">${comment.username}</span>
+                  <span class="font-semibold">${escapeHtml(comment.username)}</span>
               </div>
               <div class="flex items-center space-x-1 mt-1">
-                <div id="rate-${comment.id}"></div>
+                <div id="rate-${escapeJsString(comment.id)}"></div>
               </div>
             </div>
-            <span class="text-sm text-white/60">${comment.createdAt}</span>
+            <span class="text-sm text-white/60">${escapeHtml(comment.createdAt)}</span>
           </div>
           ${quotedHtml}
           <p class="text-white/80">${commentText}</p>
           <div class="flex space-x-4 mt-3">
-            <button class="text-sm text-white/60 hover:text-white" onclick="quoteComment('${comment.id}')">引用</button>
+            <button class="text-sm text-white/60 hover:text-white" onclick="quoteComment('${escapeJsString(comment.id)}')">引用</button>
 <!--            <button class="text-sm text-white/60 hover:text-white" onclick="replyToComment('${comment.id}')">回复</button>-->
           </div>
         `;
@@ -295,8 +295,8 @@
                     }
                     const quotePreview = document.getElementById('quote-preview');
                     quotePreview.innerHTML = `
-                    <p class="text-sm text-white/60">引用 ${comment.username} 的评论：</p>
-                    <p class="text-white/80">${comment.comment}</p>
+                    <p class="text-sm text-white/60">引用 ${escapeHtml(comment.username)} 的评论：</p>
+                    <p class="text-white/80">${escapeHtml(comment.comment)}</p>
                   `;
                     quotePreview.style.display = 'block';
                     stopMainLoading()

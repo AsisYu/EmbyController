@@ -70,6 +70,11 @@
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
 
 <script>
+    function escapeHtml(value) {
+        return String(value ?? '').replace(/[&<>"']/g, function(c) {
+            return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+        });
+    }
     let isSearching = false;
     let selectedUser = null;
 
@@ -168,9 +173,10 @@
             results.forEach(user => {
                 const userElement = document.createElement('div');
                 userElement.className = 'flex items-center space-x-3 p-3 hover:bg-white/10 cursor-pointer';
+                var uName = escapeHtml(user.nickName);
                 userElement.innerHTML = `
-                        <img src="/api/common/getHeadImg?id=${user.id}&size=100" alt="${user.nickName}" class="w-8 h-8 rounded-full">
-                        <span>${user.nickName}</span>
+                        <img src="/api/common/getHeadImg?id=${encodeURIComponent(user.id)}&size=100" alt="${uName}" class="w-8 h-8 rounded-full">
+                        <span>${uName}</span>
                     `;
                 userElement.onclick = () => selectUser(user);
                 resultsContainer.appendChild(userElement);
@@ -241,17 +247,18 @@
                         if (notification.fromUserId === <?php echo session('r_user')->id; ?>) {
                             notificationElement.id = `msg-${notification.toUserId}`;
                             notificationElement.href = '/media/user/notificationDetail?id=' + notification.toUserId;
+                            var tdName = escapeHtml(notification.toNickName || notification.toUserName);
                             notificationElement.innerHTML = `
                             <div class="glass-effect rounded-lg p-4 hover:bg-white/10 transition-colors border-l-4">
                                 <div class="flex items-start w-full">
                                     <div class="flex items-start w-full space-x-3">
                                         <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                            <img src="/api/common/getHeadImg?id=${notification.toUserId}" class="w-full h-full rounded-full" />
+                                            <img src="/api/common/getHeadImg?id=${encodeURIComponent(notification.toUserId)}" class="w-full h-full rounded-full" />
                                         </div>
                                         <div class="max-w-[80%] md:max-w-[90%]">
-                                            <h3 class="font-semibold">${notification.toNickName?notification.toNickName:toUserName}</h3>
-                                            <p class="text-white/60 mt-1 line-clamp-1">${notification.message}</p>
-                                            <span class="text-sm text-white-40 mt-2 block">${notification.createdAt}</span>
+                                            <h3 class="font-semibold">${tdName}</h3>
+                                            <p class="text-white/60 mt-1 line-clamp-1">${escapeHtml(notification.message)}</p>
+                                            <span class="text-sm text-white-40 mt-2 block">${escapeHtml(notification.createdAt)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -260,17 +267,18 @@
                         } else {
                             notificationElement.id = `msg-${notification.fromUserId}`;
                             notificationElement.href = '/media/user/notificationDetail?id=' + notification.fromUserId;
+                            var fdName = escapeHtml(notification.fromNickName || notification.fromUserName);
                             notificationElement.innerHTML = `
                             <div class="glass-effect rounded-lg p-4 hover:bg-white/10 transition-colors border-l-4${notification.readStatus==0?' border-l-blue-500':''}">
                                 <div class="flex items-start w-full">
                                     <div class="flex items-start w-full space-x-3">
                                         <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                            <img src="/api/common/getHeadImg?id=${notification.fromUserId}" class="w-full h-full rounded-full" />
+                                            <img src="/api/common/getHeadImg?id=${encodeURIComponent(notification.fromUserId)}" class="w-full h-full rounded-full" />
                                         </div>
                                         <div class="max-w-[80%] md:max-w-[90%]">
-                                            <h3 class="font-semibold">${notification.fromNickName?notification.fromNickName:fromUserName}</h3>
-                                            <p class="text-white-60 mt-1 line-clamp-1">${notification.fromNickName?notification.fromNickName:fromUserName}: ${notification.message}</p>
-                                            <span class="text-sm text-white-40 mt-2 block">${notification.createdAt}</span>
+                                            <h3 class="font-semibold">${fdName}</h3>
+                                            <p class="text-white-60 mt-1 line-clamp-1">${fdName}: ${escapeHtml(notification.message)}</p>
+                                            <span class="text-sm text-white-40 mt-2 block">${escapeHtml(notification.createdAt)}</span>
                                         </div>
                                     </div>
                                 </div>

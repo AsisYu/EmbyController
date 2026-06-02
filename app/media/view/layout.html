@@ -7,6 +7,7 @@
 	<meta name="description" content="专业的影视管理平台" />
 	<meta name="author" content="{:config('app.tech_support_name')}" />
 	<script src="/assets/index/js/jquery-3.7.1.min.js"></script>
+{include file='public/_csrf' /}
 	<script src="https://cdn.tailwindcss.com"></script>
 	<link href="/assets/index/css/layui.css" rel="stylesheet">
 	<script src="/assets/index/js/layui.js"></script>
@@ -522,15 +523,15 @@ function renderSearchResults(results) {
 		resultDiv.innerHTML = `
 			<div class="flex justify-between items-start">
 				<div class="flex-1">
-					<h4 class="font-semibold">${result.title} (${result.year})</h4>
+					<h4 class="font-semibold">${escapeHtml(result.title)} (${escapeHtml(result.year)})</h4>
 					<p class="text-sm text-gray-400">
-						${result.resource_pix} | ${result.video_encode} | ${result.audio_encode}
+						${escapeHtml(result.resource_pix)} | ${escapeHtml(result.video_encode)} | ${escapeHtml(result.audio_encode)}
 						<br>
 						大小: ${formatSize(result.size)} | 做种数: ${result.seeders}
 					</p>
 					${result.description ? `
 					<p class="text-sm text-gray-400 mt-2">
-						简介: ${result.description}
+						简介: ${escapeHtml(result.description)}
 					</p>
 					` : ''}
 				</div>
@@ -753,12 +754,12 @@ function renderSearchResults(results) {
 				.then(data => {
 					if (data.code === 200) {
 						const comment = data.data;
-						let commentText = comment.comment;
+						let commentText = escapeHtml(comment.comment);
 						for (const mention of comment.mentions) {
-							commentText = commentText.replaceAll('@#'+mention.id+'# ', `<span class="text-blue-400 cursor-pointer" onclick="showUserProfile('${mention.id}')">@${mention.username} </span>`);
+							commentText = commentText.replaceAll('@#'+mention.id+'# ', `<span class="text-blue-400 cursor-pointer" onclick="showUserProfile('${escapeJsString(mention.id)}')">@${escapeHtml(mention.username)} </span>`);
 						}
 						document.getElementById('quoted-comment-content').innerHTML = `
-			<p class="font-semibold mb-2">${comment.username} ${comment.createdAt}</p>
+			<p class="font-semibold mb-2">${escapeHtml(comment.username)} ${escapeHtml(comment.createdAt)}</p>
 			<p>${commentText}</p>
 		  `;
 						stopMainLoading()

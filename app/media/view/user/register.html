@@ -267,7 +267,7 @@
                 modalContent.innerHTML = html;
             })
             .catch(error => {
-                modalContent.innerHTML = `<p class="text-red-500">加载失败: ${error.message}</p>`;
+                modalContent.innerHTML = `<p class="text-red-500">加载失败: ${escapeHtml(error.message)}</p>`;
             });
     }
 

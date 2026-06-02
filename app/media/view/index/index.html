@@ -9,6 +9,7 @@
     <meta name="description" content="专业的影视管理平台" />
     <meta name="author" content="{:config('app.tech_support_name')}" />
     <script src="/assets/index/js/jquery-3.7.1.min.js"></script>
+{include file='public/_csrf' /}
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <style>
@@ -429,7 +430,7 @@
                     mediaList.forEach((media, i) => {
                         inner += `<div class="w-[180px] md:w-[200px] flex-none snap-start" onclick="window.location.href='/media/user/commentDetail?id=${media.Id}'">`;
                         inner += `<div class="relative aspect-[2/3] overflow-hidden rounded-lg">`;
-                        inner += `<img src="/media/index/getPrimaryImg?id=${media.Id}" alt="${media.Name}" class="w-full h-full object-cover rounded-lg zoom-img" loading="lazy"/>`;
+                        inner += `<img src="/media/index/getPrimaryImg?id=${media.Id}" alt="${escapeHtml(media.Name)}" class="w-full h-full object-cover rounded-lg zoom-img" loading="lazy"/>`;
                         inner += `<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>`;
                         inner += `<div class="absolute bottom-0 p-3 md:p-4 w-full">`;
                         inner += `<span class="text-xs uppercase tracking-wider text-white/80">`;
@@ -441,7 +442,7 @@
                             media.Status === "Continuing" ? inner += "连载中" : inner += "已完结";
                         }
                         inner += `</span>`;
-                        inner += `<h3 class="text-base md:text-lg font-semibold mt-1">${media.Name}</h3>`;
+                        inner += `<h3 class="text-base md:text-lg font-semibold mt-1">${escapeHtml(media.Name)}</h3>`;
                         inner += `</div></div></div>`;
                     });
                 } else {
@@ -464,7 +465,7 @@
                     serverList.forEach((server, i) => {
                         delayInner += `<div class="p-6 glass-effect rounded-lg">`;
                         if (server.url && server.url !== "") {
-                            delayInner += `<h3 class="font-medium" onclick="window.location.href='${server.url}'">线路${i + 1} - <a href="${server.url}">${server.name}</a></h3>`;
+                            delayInner += `<h3 class="font-medium" onclick="window.location.href='${escapeJsString(server.url)}'">线路${i + 1} - <a href="${escapeHtml(server.url)}">${escapeHtml(server.name)}</a></h3>`;
                         } else {
                             delayInner += `<h3 class="font-medium">线路${i + 1}</h3>`;
                         }
@@ -472,12 +473,12 @@
                         if (server.status && server.status === 1) {
                             delayInner += `<span class="text-sm text-green-400">在线</span>`;
                             if (server.url && server.url !== "") {
-                                delayInner += `<span class="text-sm text-white/60" id="line-${i}-delay" onclick="getDelay(${i}, '${server.url}')">点击测试延迟</span>`;
+                                delayInner += `<span class="text-sm text-white/60" id="line-${i}-delay" onclick="getDelay(${i}, '${escapeJsString(server.url)}')">点击测试延迟</span>`;
                             }
                         } else {
                             delayInner += `<span class="text-sm text-red-400">离线</span>`;
                             if (server.url && server.url !== "") {
-                                delayInner += `<span class="text-sm text-white/60" id="line-${i}-delay" onclick="getDelay(${i}, '${server.url}')">点击测试延迟</span>`;
+                                delayInner += `<span class="text-sm text-white/60" id="line-${i}-delay" onclick="getDelay(${i}, '${escapeJsString(server.url)}')">点击测试延迟</span>`;
                             }
                         }
                         delayInner += `</div></div>`;

@@ -14,6 +14,7 @@ use mailer\Mailer;
 use Symfony\Component\VarDumper\Cloner\Data;
 use think\facade\Request;
 use think\facade\Session;
+use think\facade\Db;
 use app\media\model\UserModel as UserModel;
 use app\media\validate\Login as LoginValidate;
 use app\media\validate\Register as RegisterValidate;
@@ -932,31 +933,49 @@ class Server extends BaseController
                     $commodity = $payRecordInfo['commodity'];
                     $unit = $payRecordInfo['unit'];
                     $count = $payRecordInfo['count'];
-                    $payRecord->type = 2;
-                    $payRecord->save();
-                    if ($commodity == 'R币充值') {
-                        $userModel = new UserModel();
-                        $user = $userModel->where('id', $payRecord['userId'])->find();
-                        $sysConfigModel = new SysConfigModel();
-                        $rateConfig = $sysConfigModel->where('key', 'chargeRate')->find();
-                        if ($rateConfig) {
-                            $rate = $rateConfig['value'];
+
+                    Db::startTrans();
+                    try {
+                        $payRecord = $PayRecordModel->where('id', $payRecord['id'])->lock(true)->find();
+                        if ((int) $payRecord['type'] !== 1) {
+                            Db::rollback();
+                            return json(['code' => 200, 'message' => '订单已支付']);
                         }
-                        $increase = ceil($count*$rate*100)/100;
-                        $rCoin = $user->rCoin + $increase;
-                        // $rCoin转换为double类型数据存入数据库
-                        $rCoin = sprintf("%.2f", $rCoin);
-                        $user->rCoin = $rCoin;
-                        $user->save();
-                        $financeRecordModel = new FinanceRecordModel();
-                        $financeRecordModel->save([
-                            'userId' => $payRecord['userId'],
-                            'action' => 1,
-                            'count' => $count,
-                            'recordInfo' => [
-                                'message' => '使用支付宝支付' . $count . '元充值' . $increase . 'R币' . ($rate!=1?'(其中包含限时优惠赠送' . ($increase-$count) . 'R币)':'')
-                            ]
-                        ]);
+
+                        $payRecord->type = 2;
+                        $payRecord->save();
+
+                        if ($commodity == 'R币充值') {
+                            $userModel = new UserModel();
+                            $user = $userModel->where('id', $payRecord['userId'])->lock(true)->find();
+                            $sysConfigModel = new SysConfigModel();
+                            $rateConfig = $sysConfigModel->where('key', 'chargeRate')->find();
+                            if ($rateConfig) {
+                                $rate = $rateConfig['value'];
+                            }
+                            $increase = ceil($count*$rate*100)/100;
+                            $rCoin = $user->rCoin + $increase;
+                            // $rCoin转换为double类型数据存入数据库
+                            $rCoin = sprintf("%.2f", $rCoin);
+                            $user->rCoin = $rCoin;
+                            $user->save();
+                            $financeRecordModel = new FinanceRecordModel();
+                            $financeRecordModel->save([
+                                'userId' => $payRecord['userId'],
+                                'action' => 1,
+                                'count' => $count,
+                                'recordInfo' => [
+                                    'message' => '使用支付宝支付' . $count . '元充值' . $increase . 'R币' . ($rate!=1?'(其中包含限时优惠赠送' . ($increase-$count) . 'R币)':'')
+                                ]
+                            ]);
+                        }
+
+                        Db::commit();
+                    } catch (\Exception $e) {
+                        Db::rollback();
+                        trace('resolvePayment error: ' . $e->getMessage(), 'error');
+                        return json(['code' => 500, 'message' => '支付处理失败']);
+                    }
                         sendTGMessage($payRecord['userId'], '您已经成功充值了 <strong>' . $count . '</strong> 元，获得 <strong>' . $increase . '</strong> R币，当前余额为 <strong>' . $rCoin . '</strong>');
                         $money = $payRecord['money'];
                         $userModel = new UserModel();

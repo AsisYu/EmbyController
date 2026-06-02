@@ -128,7 +128,7 @@ function getStatusBadge(status, remark = '') {
     };
     let badge = badges[status] || '<span class="px-2 py-1 bg-gray-500/20 text-gray-300 rounded-full text-sm">未知状态</span>';
     if (remark) {
-        badge += ` <span class="text-sm text-gray-400">(${remark})</span>`;
+        badge += ` <span class="text-sm text-gray-400">(${escapeHtml(remark)})</span>`;
     }
     return badge;
 }
@@ -147,15 +147,15 @@ function renderTimeline(items) {
         switch(item.type) {
             case 'create':
                 dotClass = 'bg-blue-500';
-                content = item.content;
+                content = escapeHtml(item.content);
                 break;
             case 'seek':
                 dotClass = 'bg-green-500';
-                content = item.content;
+                content = escapeHtml(item.content);
                 break;
             case 'status':
                 dotClass = 'bg-yellow-500';
-                content = `管理员将状态更新为：${getStatusText(item.status)}${item.remark ? `，备注：${item.remark}` : ''}`;
+                content = `管理员将状态更新为：${getStatusText(item.status)}${item.remark ? `，备注：${escapeHtml(item.remark)}` : ''}`;
                 break;
         }
 

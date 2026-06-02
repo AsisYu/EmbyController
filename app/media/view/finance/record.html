@@ -76,8 +76,8 @@ function renderRecordList(list) {
             <td class="py-3 px-4">${item.id}</td>
             <td class="py-3 px-4">${getActionText(item.action)}</td>
             <td class="py-3 px-4">${item.count}</td>
-            <td class="py-3 px-4">${item.createdAt}</td>
-            <td class="py-3 px-4">${item.recordInfo.message}</td>
+            <td class="py-3 px-4">${escapeHtml(item.createdAt)}</td>
+            <td class="py-3 px-4">${escapeHtml(item.recordInfo.message)}</td>
         `;
         tbody.appendChild(tr);
     });

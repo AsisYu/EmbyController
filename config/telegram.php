@@ -7,6 +7,7 @@ return [
             'default' => [
                 'token' => env('TG_BOT_TOKEN', 'notgbot'),
                 'username' => env('TG_BOT_USERNAME', ''),
+                'webhook_secret' => env('TG_WEBHOOK_SECRET', ''),
             ],
         ]
     ],

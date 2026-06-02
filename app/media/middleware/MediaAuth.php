@@ -56,7 +56,7 @@ class MediaAuth
 
         $flag = false;
         foreach ($allowList as $allow) {
-            if (strpos($url, $allow) !== false) {
+            if ($url === $allow) {
                 $flag = true;
                 break;
             }

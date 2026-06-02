@@ -218,22 +218,29 @@ class Common extends BaseController
             'qnmob3.doubanio.com'
         ];
 
-        $urlDomain = parse_url($url, PHP_URL_HOST);
-        
+        $urlScheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        $urlDomain = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        if (!in_array($urlScheme, ['http', 'https'], true) || $urlDomain === '') {
+            return response('Invalid URL', 400);
+        }
+
         // 特殊处理TMDB的图片URL
-        if (strpos($url, 'themoviedb.org') !== false && !str_starts_with($url, 'https://image.tmdb.org')) {
+        if (in_array($urlDomain, ['themoviedb.org', 'www.themoviedb.org'], true) && !str_starts_with($url, 'https://image.tmdb.org')) {
             // 如果是TMDB的图片但不是完整的CDN地址，添加CDN前缀
             if (str_starts_with($url, '/')) {
                 $url = 'https://image.tmdb.org/t/p/original' . $url;
             } else {
-                $url = 'https://image.tmdb.org/t/p/original/' . $url;
+                $url = 'https://image.tmdb.org/t/p/original/' . ltrim($url, '/');
             }
+            $urlDomain = 'image.tmdb.org';
         }
 
-        // 检查域名是否允许
+        // 检查域名是否允许（精确匹配或子域名匹配）
         $isAllowed = false;
         foreach ($allowedDomains as $domain) {
-            if (strpos($urlDomain, $domain) !== false) {
+            $domain = strtolower($domain);
+            if ($urlDomain === $domain || str_ends_with($urlDomain, '.' . $domain)) {
                 $isAllowed = true;
                 break;
             }
@@ -255,7 +262,8 @@ class Common extends BaseController
                 // 如果缓存中没有，则从远程获取
                 $client = new Client([
                     'timeout' => 10,
-                    'verify' => false
+                    'verify' => false,
+                    'allow_redirects' => false
                 ]);
                 
                 $response = $client->get($url);

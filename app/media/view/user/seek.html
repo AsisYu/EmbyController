@@ -85,20 +85,20 @@ function renderSeekList(list) {
         tr.innerHTML = `
             <td class="py-3 px-4">
                 <a href="/media/user/seekDetail?id=${item.id}" class="text-blue-400 hover:text-blue-300">
-                    ${item.title}
+                    ${escapeHtml(item.title)}
                 </a>
             </td>
             <td class="py-3 px-4">
                 <a href="/media/user/notificationDetail?id=${item.userId}" class="text-blue-400 hover:text-blue-300">
-                    ${item.nickName || item.userName}(#${item.userId})
+                    ${escapeHtml(item.nickName || item.userName)}(#${item.userId})
                 </a>
             </td>
             <td class="py-3 px-4">${item.seekCount}</td>
-            <td class="py-3 px-4">${item.createdAt}</td>
+            <td class="py-3 px-4">${escapeHtml(item.createdAt)}</td>
             <td class="py-3 px-4">
                 ${getStatusBadge(item.status, item.statusRemark)}
             </td>
-            <td class="py-3 px-4">${item.description || '-'}</td>
+            <td class="py-3 px-4">${escapeHtml(item.description || '-')}</td>
             <td class="py-3 px-4">
                 ${item.userId != <?php echo $user->id; ?>  && item.canSeek ?
         `<button onclick="handleSeek(${item.id})" class="text-blue-400 hover:text-blue-300">同求</button>` :
@@ -118,7 +118,7 @@ function getStatusBadge(status, remark) {
         1: '<span class="px-2 py-1 bg-blue-500/20 text-blue-300 rounded-full text-sm">管理员已确认</span>',
         2: '<span class="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full text-sm">正在收集资源</span>',
         3: '<span class="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-sm">已入库</span>',
-        '-1': `<span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-sm cursor-help" title="${remark || '暂无原因'}">暂不收录</span>`
+        '-1': `<span class="px-2 py-1 bg-red-500/20 text-red-300 rounded-full text-sm cursor-help" title="${escapeHtml(remark || '暂无原因')}">暂不收录</span>`
     };
     return badges[status] || badges[0];
 }
@@ -274,15 +274,15 @@ function renderSearchResults(results) {
         resultDiv.innerHTML = `
             <div class="flex justify-between items-start">
                 <div class="flex-1">
-                    <h4 class="font-semibold">${result.title} (${result.year})</h4>
+                    <h4 class="font-semibold">${escapeHtml(result.title)} (${escapeHtml(result.year)})</h4>
                     <p class="text-sm text-gray-400">
-                        ${result.resource_pix} | ${result.video_encode} | ${result.audio_encode}
+                        ${escapeHtml(result.resource_pix)} | ${escapeHtml(result.video_encode)} | ${escapeHtml(result.audio_encode)}
                         <br>
                         大小: ${formatSize(result.size)} | 做种数: ${result.seeders}
                     </p>
                     ${result.description ? `
                     <p class="text-sm text-gray-400 mt-2">
-                        简介: ${result.description}
+                        简介: ${escapeHtml(result.description)}
                     </p>
                     ` : ''}
                 </div>

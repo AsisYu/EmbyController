@@ -1,0 +1,45 @@
+<meta name="csrf-token" content="{$csrfToken|default=''}">
+<script>
+window.CSRF_TOKEN = '{$csrfToken|default=''}';
+
+function shouldAttachCsrf(url) {
+    if (!url) return true;
+    return url.indexOf('/') === 0 || url.indexOf(window.location.origin) === 0;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form').forEach(function (form) {
+        var method = (form.getAttribute('method') || 'get').toLowerCase();
+        if (method !== 'post' || form.querySelector('input[name="__csrf_token__"]')) return;
+        var input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = '__csrf_token__';
+        input.value = window.CSRF_TOKEN;
+        form.appendChild(input);
+    });
+});
+
+if (window.jQuery) {
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (window.CSRF_TOKEN && shouldAttachCsrf(settings.url)) {
+                xhr.setRequestHeader('X-CSRF-Token', window.CSRF_TOKEN);
+            }
+        }
+    });
+}
+
+if (window.fetch) {
+    var _fetch = window.fetch.bind(window);
+    window.fetch = function (resource, options) {
+        options = options || {};
+        var method = String(options.method || 'GET').toUpperCase();
+        var url = typeof resource === 'string' ? resource : resource.url;
+        if (window.CSRF_TOKEN && ['POST', 'PUT', 'PATCH', 'DELETE'].indexOf(method) !== -1 && shouldAttachCsrf(url)) {
+            options.headers = new Headers(options.headers || {});
+            options.headers.set('X-CSRF-Token', window.CSRF_TOKEN);
+        }
+        return _fetch(resource, options);
+    };
+}
+</script>

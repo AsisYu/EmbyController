@@ -69,6 +69,11 @@
 </div>
 
 <script>
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, function(c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+}
 let page = 1;
 let loading = false;
 let allMessagesLoaded = false;
@@ -89,16 +94,16 @@ function createMessageElement(message, random = null) {
                 <img src="/api/common/getHeadImg?id=<?php echo $id; ?>&size=100" alt="对方头像" class="w-full h-full rounded-full" />
             </div>
             <div class="glass-effect rounded-lg rounded-tl-none p-4 max-w-[90%]">
-                <p class="text-white/90 break-all">${message.message}</p>
-                <span class="text-sm text-white/40 mt-2 block">${message.createdAt}</span>
+                <p class="text-white/90 break-all">${escapeHtml(message.message)}</p>
+                <span class="text-sm text-white/40 mt-2 block">${escapeHtml(message.createdAt)}</span>
             </div>
         </div>
     ` : `
         <div class="flex items-end space-x-2">
             <div class="glass-effect rounded-lg rounded-tr-none p-4 max-w-[90%]">
-                <p class="text-white/90 break-all">${message.message}</p>
+                <p class="text-white/90 break-all">${escapeHtml(message.message)}</p>
                 <div class="flex items-center justify-end space-x-1 mt-1">
-                    <span class="text-sm text-white/40">${message.createdAt}</span>
+                    <span class="text-sm text-white/40">${escapeHtml(message.createdAt)}</span>
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 read-status ${message.readStatus == 0?'hidden':''}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
                     ${random ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="h-4 w-4 text-blue-500 loading-circle" fill="none" stroke="currentColor"><circle cx="50" cy="50" r="45" stroke="blue" stroke-width="5" fill="none" stroke-dasharray="141.372" stroke-linecap="round"><animateTransform attributeName="transform" type="rotate" from="0 50 50" to="360 50 50" dur="1s" repeatCount="indefinite" /></circle></svg>' : ''}
                 </div>

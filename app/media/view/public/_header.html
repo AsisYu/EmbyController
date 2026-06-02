@@ -112,6 +112,23 @@
 </style>
 
 <script>
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, function(c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+}
+function escapeJsString(value) {
+    return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\x22').replace(/&/g, '\\x26');
+}
+function renderCommentText(content, mentions) {
+    var safeText = escapeHtml(content);
+    (mentions || []).forEach(function(mention) {
+        var placeholder = '@#' + mention.id + '# ';
+        var mentionHtml = '<span class="text-blue-400 cursor-pointer" onclick="showUserProfile(\'' + escapeJsString(mention.id) + '\')">@' + escapeHtml(mention.username) + ' </span>';
+        safeText = safeText.replaceAll(placeholder, mentionHtml);
+    });
+    return safeText;
+}
 let lastMessageId = 0;
 let ws = null;
 let wsReconnectTimer = null;
@@ -188,8 +205,8 @@ function initWebSocket() {
                         // 如果在消息列表页面，自动更新未读状态
                         if (window.location.pathname === '/media/user/notifications') {
                             if (message.fromUserId === 0) {
-                                document.getElementById('msg-0-msg').innerHTML = message.message;
-                                document.getElementById('msg-0-time').innerHTML = message.createdAt;
+                                document.getElementById('msg-0-msg').textContent = message.message;
+                                document.getElementById('msg-0-time').textContent = message.createdAt;
                                 document.getElementById('msg-0').children[0].classList.add('border-l-blue-500');
                             } else {
                                 const notificationElement = document.createElement('a');
@@ -197,17 +214,18 @@ function initWebSocket() {
                                 if (message.fromUserId != <?php echo session('r_user')->id; ?>) {
                                     notificationElement.id = `msg-${message.fromUserId}`;
                                     notificationElement.href = '/media/user/notificationDetail?id=' + message.fromUserId;
+                                    var displayName = escapeHtml(message.fromNickName || message.fromUserName);
                                     notificationElement.innerHTML = `
                                     <div class="glass-effect rounded-lg p-4 hover:bg-white/10 transition-colors border-l-4 border-l-blue-500">
                                         <div class="flex items-start w-full">
                                             <div class="flex items-start w-full space-x-3">
                                                 <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                                    <img src="/api/common/getHeadImg?id=${message.fromUserId}" class="w-full h-full rounded-full" />
+                                                    <img src="/api/common/getHeadImg?id=${encodeURIComponent(message.fromUserId)}" class="w-full h-full rounded-full" />
                                                 </div>
                                                 <div class="max-w-[80%] md:max-w-[90%]">
-                                                    <h3 class="font-semibold">${message.fromNickName?message.fromNickName:message.fromUserName}</h3>
-                                                    <p class="text-white-60 mt-1 line-clamp-1">${message.fromNickName?message.fromNickName:message.fromUserName}: ${message.message}</p>
-                                                    <span class="text-sm text-white-40 mt-2 block">${message.createdAt}</span>
+                                                    <h3 class="font-semibold">${displayName}</h3>
+                                                    <p class="text-white-60 mt-1 line-clamp-1">${displayName}: ${escapeHtml(message.message)}</p>
+                                                    <span class="text-sm text-white-40 mt-2 block">${escapeHtml(message.createdAt)}</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -225,7 +243,7 @@ function initWebSocket() {
                                     }
                                 }
                             }
-                            rStatusMessage.info(message.fromUserName + ": " + message.message, '新消息');
+                            rStatusMessage.info(escapeHtml(message.fromUserName) + ": " + escapeHtml(message.message), '新消息');
                         } else if (window.location.pathname.includes('/media/user/notificationDetail')) {
                             // 获取当前聊天用户id，即当前页面的url中的id参数
                             const currentUserId = parseInt(window.location.search.split('=')[1]);
@@ -246,10 +264,10 @@ function initWebSocket() {
 
                                 ob.observe(messageElement);
                             } else {
-                                rStatusMessage.info(message.fromUserName + ": " + message.message, '新消息');
+                                rStatusMessage.info(escapeHtml(message.fromUserName) + ": " + escapeHtml(message.message), '新消息');
                             }
                         } else {
-                            rStatusMessage.info(message.fromUserName + ": " + message.message, '新消息');
+                            rStatusMessage.info(escapeHtml(message.fromUserName) + ": " + escapeHtml(message.message), '新消息');
                         }
                     }
                     break;
@@ -264,17 +282,18 @@ function initWebSocket() {
                             if (message.fromUserId === <?php echo session('r_user')->id; ?>) {
                                 notificationElement.id = `msg-${message.toUserId}`;
                                 notificationElement.href = '/media/user/notificationDetail?id=' + message.toUserId;
+                                var toDisplayName = escapeHtml(message.toNickName || message.toUserName);
                                 notificationElement.innerHTML = `
                                     <div class="glass-effect rounded-lg p-4 hover:bg-white/10 transition-colors border-l-4">
                                         <div class="flex items-start w-full">
                                             <div class="flex items-start w-full space-x-3">
                                                 <div class="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
-                                                    <img src="/api/common/getHeadImg?id=${message.toUserId}" class="w-full h-full rounded-full" />
+                                                    <img src="/api/common/getHeadImg?id=${encodeURIComponent(message.toUserId)}" class="w-full h-full rounded-full" />
                                                 </div>
                                                 <div class="max-w-[80%] md:max-w-[90%]">
-                                                    <h3 class="font-semibold">${message.toNickName?message.toNickName:message.toUserName}</h3>
-                                                    <p class="text-white/60 mt-1 line-clamp-1">${message.message}</p>
-                                                    <span class="text-sm text-white-40 mt-2 block">${message.createdAt}</span>
+                                                    <h3 class="font-semibold">${toDisplayName}</h3>
+                                                    <p class="text-white/60 mt-1 line-clamp-1">${escapeHtml(message.message)}</p>
+                                                    <span class="text-sm text-white-40 mt-2 block">${escapeHtml(message.createdAt)}</span>
                                                 </div>
                                             </div>
                                         </div>

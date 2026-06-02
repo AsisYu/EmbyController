@@ -8,6 +8,7 @@ use app\media\model\PayRecordModel;
 use app\media\model\SysConfigModel;
 use think\facade\Request;
 use think\facade\Session;
+use think\facade\Db;
 use app\media\model\UserModel as UserModel;
 use app\media\validate\Login as LoginValidate;
 use app\media\validate\Register as RegisterValidate;
@@ -130,25 +131,39 @@ class Finance extends BaseController
             $respond = getHttpResponse($url);
             $respond = json_decode($respond, true);
             if ($respond['code'] == 1 && $respond['status'] == 1) {
-                $payRecord->type = 2;
-                $payRecord->save();
+                Db::startTrans();
+                try {
+                    $payRecord = $payRecordModel->where('id', $data['id'])->lock(true)->find();
+                    if ((int) $payRecord['type'] !== 1) {
+                        Db::rollback();
+                        return json(['code' => 200, 'message' => '订单已支付']);
+                    }
 
-                $userModel = new UserModel();
-                $user = $userModel->where('id', $payRecord['userId'])->find();
-                $user->rCoin = $user->rCoin + $payRecord['money']*2;
-                $user->save();
+                    $payRecord->type = 2;
+                    $payRecord->save();
 
-                $financeRecordModel = new FinanceRecordModel();
-                $financeRecordModel->save([
-                    'userId' => $payRecord['userId'],
-                    'action' => 1,
-                    'count' => $payRecord['money'],
-                    'recordInfo' => [
-                        'message' => '订单(#' . $payRecord['tradeNo'] . ')用户手动补单支付成功，兑换成' . $payRecord['money'] . 'R币 + ' . $payRecord['money'] . '赠送R币',
-                    ]
-                ]);
+                    $userModel = new UserModel();
+                    $user = $userModel->where('id', $payRecord['userId'])->lock(true)->find();
+                    $user->rCoin = $user->rCoin + $payRecord['money'] * 2;
+                    $user->save();
 
-                return json(['code' => 200, 'message' => '订单已支付']);
+                    $financeRecordModel = new FinanceRecordModel();
+                    $financeRecordModel->save([
+                        'userId' => $payRecord['userId'],
+                        'action' => 1,
+                        'count' => $payRecord['money'],
+                        'recordInfo' => [
+                            'message' => '订单(#' . $payRecord['tradeNo'] . ')用户手动补单支付成功，兑换成' . $payRecord['money'] . 'R币 + ' . $payRecord['money'] . '赠送R币',
+                        ]
+                    ]);
+
+                    Db::commit();
+                    return json(['code' => 200, 'message' => '订单已支付']);
+                } catch (\Exception $e) {
+                    Db::rollback();
+                    trace('rePay error: ' . $e->getMessage(), 'error');
+                    return json(['code' => 500, 'message' => '订单处理失败']);
+                }
             } else {
                 $payRecordInfoArray = json_decode(json_encode($payRecord['payRecordInfo']), true);
                 if (isset($payRecordInfoArray['payUrl'])) {
@@ -184,25 +199,39 @@ class Finance extends BaseController
             $respond = getHttpResponse($url);
             $respond = json_decode($respond, true);
             if ($respond['code'] == 1 && $respond['status'] == 1) {
-                $payRecord->type = 2;
-                $payRecord->save();
+                Db::startTrans();
+                try {
+                    $payRecord = $payRecordModel->where('id', $data['id'])->lock(true)->find();
+                    if ((int) $payRecord['type'] !== 1) {
+                        Db::rollback();
+                        return json(['code' => 200, 'message' => '订单已支付']);
+                    }
 
-                $userModel = new UserModel();
-                $user = $userModel->where('id', $payRecord['userId'])->find();
-                $user->rCoin = $user->rCoin + $payRecord['money']*2;
-                $user->save();
+                    $payRecord->type = 2;
+                    $payRecord->save();
 
-                $financeRecordModel = new FinanceRecordModel();
-                $financeRecordModel->save([
-                    'userId' => $payRecord['userId'],
-                    'action' => 1,
-                    'count' => $payRecord['money'],
-                    'recordInfo' => [
-                        'message' => '订单(#' . $payRecord['tradeNo'] . ')用户手动补单支付成功，兑换成' . $payRecord['money'] . 'R币 + ' . $payRecord['money'] . '赠送R币',
-                    ]
-                ]);
+                    $userModel = new UserModel();
+                    $user = $userModel->where('id', $payRecord['userId'])->lock(true)->find();
+                    $user->rCoin = $user->rCoin + $payRecord['money'] * 2;
+                    $user->save();
 
-                return json(['code' => 200, 'message' => '订单已支付']);
+                    $financeRecordModel = new FinanceRecordModel();
+                    $financeRecordModel->save([
+                        'userId' => $payRecord['userId'],
+                        'action' => 1,
+                        'count' => $payRecord['money'],
+                        'recordInfo' => [
+                            'message' => '订单(#' . $payRecord['tradeNo'] . ')用户手动补单支付成功，兑换成' . $payRecord['money'] . 'R币 + ' . $payRecord['money'] . '赠送R币',
+                        ]
+                    ]);
+
+                    Db::commit();
+                    return json(['code' => 200, 'message' => '订单已支付']);
+                } catch (\Exception $e) {
+                    Db::rollback();
+                    trace('checkPay error: ' . $e->getMessage(), 'error');
+                    return json(['code' => 500, 'message' => '订单处理失败']);
+                }
             } else {
                 return json(['code' => 400, 'message' => '订单未支付']);
             }

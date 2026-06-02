@@ -95,7 +95,12 @@ class Telegram extends BaseController
         } else {
             $telegram = new Api($token);
             $telegram->removeWebhook();
-            $telegram->setWebhook(['url' => $weburl . '/api/telegram/listenWebHook']);
+            $secretToken = Config::get('telegram.botConfig.bots.default.webhook_secret');
+            $webhookConfig = ['url' => $weburl . '/api/telegram/listenWebHook'];
+            if (!empty($secretToken)) {
+                $webhookConfig['secret_token'] = $secretToken;
+            }
+            $telegram->setWebhook($webhookConfig);
             return 'success';
         }
     }
@@ -103,9 +108,19 @@ class Telegram extends BaseController
     public function listenWebHook()
     {
         $token = Config::get('telegram.botConfig.bots.default.token');
+        $secretToken = Config::get('telegram.botConfig.bots.default.webhook_secret');
+
         if ($token == 'notgbot') {
             return '请先配置Telegram机器人';
         }
+
+        if (!empty($secretToken)) {
+            $requestSecret = request()->header('X-Telegram-Bot-Api-Secret-Token');
+            if (!$requestSecret || !hash_equals($secretToken, $requestSecret)) {
+                return json(['ok' => false], 403);
+            }
+        }
+
         try {
             $telegram = new Api($token);
             $tgMsg = $telegram->getWebhookUpdates();

@@ -73,10 +73,10 @@ function renderPayRecordList(list) {
         const tr = document.createElement('tr');
         tr.innerHTML = `
             <td class="py-3 px-4">
-                <a href="/media/finance/payRecordDetail?id=${item.id}" class="text-blue-400 hover:text-blue-300">${item.name}(#${item.id})</a>
+                <a href="/media/finance/payRecordDetail?id=${item.id}" class="text-blue-400 hover:text-blue-300">${escapeHtml(item.name)}(#${item.id})</a>
             </td>
             <td class="py-3 px-4">￥${item.money}</td>
-            <td class="py-3 px-4">${item.createdAt}</td>
+            <td class="py-3 px-4">${escapeHtml(item.createdAt)}</td>
             <td class="py-3 px-4">${getStatusBadge(item.type)}</td>
         `;
         tbody.appendChild(tr);
