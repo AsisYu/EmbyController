@@ -2,6 +2,15 @@
 <script>
 window.CSRF_TOKEN = '{$csrfToken|default=''}';
 
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, function(c) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
+    });
+}
+function escapeJsString(value) {
+    return String(value ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\x22').replace(/&/g, '\\x26');
+}
+
 function shouldAttachCsrf(url) {
     if (!url) return true;
     return url.indexOf('/') === 0 || url.indexOf(window.location.origin) === 0;
