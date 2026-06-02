@@ -148,6 +148,12 @@ class WebSocketServer
             }
         }
 
+        if ($message && isset($message['type']) && $message['type'] === 'get_connection_count') {
+            $this->sendToUser($connection->userId, 'connection_count', [
+                'count' => count(self::$clients)
+            ]);
+        }
+
         if ($message && isset($message['type']) && $message['type'] === 'read_message') {
             // 在连接池中查找用户的连接
             if (isset($connection->userId) && isset(self::$clients[$connection->userId])) {

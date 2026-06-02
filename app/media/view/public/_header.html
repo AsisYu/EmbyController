@@ -176,7 +176,9 @@ function initWebSocket() {
                 userId: <?php echo isset($user->id) ? $user->id : 0; ?>,
                 key: '<?php echo session('wskey')??''; ?>'
             }));
-            
+            // 请求当前在线人数，避免等待定时推送
+            ws.send(JSON.stringify({ type: 'get_connection_count' }));
+
             if (wsReconnectTimer) {
                 rStatusMessage.success('您已成功连接上服务器～');
                 clearInterval(wsReconnectTimer);
@@ -193,6 +195,7 @@ function initWebSocket() {
                         onlineCountElement.innerHTML = `
                 ${data.data.count}<p class="text-muted-foreground">在线</p>
                 <span class="h-2 w-2 rounded-full bg-green-500"></span>`;
+                        localStorage.setItem('cachedOnlineCount', data.data.count);
                     }
                     break;
                 case 'unread_count':
@@ -402,8 +405,13 @@ $(document).click(function(event) {
     }
 });
 
-// 页面加载时初始化WebSocket
+// 页面加载时，先显示缓存的在线人数，避免页面切换时闪烁到0
 $(document).ready(function() {
+    var cached = localStorage.getItem('cachedOnlineCount');
+    if (cached && parseInt(cached) > 0) {
+        var el = document.querySelector('.online-count');
+        el.innerHTML = cached + '<p class="text-muted-foreground">在线</p><span class="h-2 w-2 rounded-full bg-green-500"></span>';
+    }
     initWebSocket();
 });
 
