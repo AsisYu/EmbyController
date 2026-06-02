@@ -54,6 +54,6 @@ class CreateMediaSeekTables extends Migrator
      */
     private function getTable($name)
     {
-        return env('database.prefix', 'rc_') . $name;
+        return env('DB_PREFIX', 'rc_') . $name;
     }
 }

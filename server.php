@@ -46,6 +46,10 @@ function loadEnv() {
 try {
     $dotenv = loadEnv();
 
+    // 同时注入 $_ENV 和 putenv()，确保 ThinkPHP 配置系统能读取到 .env 值
+    require __DIR__ . '/app/env.php';
+    loadEnvFile(__DIR__);
+
     // 输出调试信息
     echo "数据库信息：\n";
     echo "DB_HOST: " . ($dotenv['DB_HOST'] ?? 'not set') . "\n";
@@ -83,7 +87,7 @@ try {
         'password'      => $dotenv['DB_PASS'] ?? '',
         'hostport'      => $dotenv['DB_PORT'] ?? '3306',
         'charset'       => $dotenv['DB_CHARSET'] ?? 'utf8',
-        'prefix'        => 'rc_',
+        'prefix'        => $dotenv['DB_PREFIX'] ?? 'rc_',
     ]);
 
     // 定义 media 配置
