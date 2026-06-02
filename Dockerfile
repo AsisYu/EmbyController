@@ -60,6 +60,11 @@ RUN composer install \
     --no-scripts \
     --prefer-dist
 
+# 下载 Tailwind CSS CLI 并构建生产 CSS
+RUN curl -sL https://github.com/tailwindlabs/tailwindcss/releases/download/v3.4.17/tailwindcss-linux-x64 -o /usr/local/bin/tailwindcss \
+    && chmod +x /usr/local/bin/tailwindcss \
+    && /usr/local/bin/tailwindcss -i /app/public/assets/css/tailwind-input.css -o /app/public/assets/css/tailwind.css --minify
+
 # 调整PHP配置
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
     && sed -i \

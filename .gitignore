@@ -14,3 +14,4 @@ CLAUDE.md
 /.buildpath
 /.project
 /openspec
+/bin/tailwindcss*
