@@ -53,8 +53,8 @@
 			}
 
 			window.rStatusMessage = {
-				success: function(m) { createToast(m, 'success', null, 3000); },
-				error: function(m) { createToast(m, 'error', null, 5000); },
+				success: function(m, t) { createToast(m, 'success', t || null, 3000); },
+				error: function(m, t) { createToast(m, 'error', t || null, 5000); },
 				info: function(m, t) { createToast(m, 'info', t || null, 3000); },
 				warning: function(m) { createToast(m, 'warning', null, 4000); }
 			};
@@ -66,8 +66,15 @@
 				else if (type === 3 || type === 'warning') typeClass = 'warning';
 				return createToast(msg, typeClass, null, timeout || 3000);
 			};
+
+			window.rChangeMessage = function(instance, msg) {
+				if (instance && instance.el) {
+					instance.el.innerHTML = msg;
+				}
+			};
 		})();
 		</script>
+
 
 	{/if}
 	<script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>

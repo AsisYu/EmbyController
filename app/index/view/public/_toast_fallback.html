@@ -1,0 +1,119 @@
+<style>
+/* 右上角 Toast 通知 */
+.r-toast-container {
+	position: fixed;
+	top: 5rem;
+	right: 1rem;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+	pointer-events: none;
+}
+.r-toast {
+	pointer-events: auto;
+	max-width: 380px;
+	min-width: 260px;
+	padding: 0.875rem 1rem;
+	border-radius: 0.5rem;
+	background: rgba(15, 15, 20, 0.95);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgba(255, 255, 255, 0.1);
+	border-left: 3px solid;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+	animation: r-toast-in 0.3s ease-out;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	font-size: 0.875rem;
+	line-height: 1.5;
+	color: rgba(255, 255, 255, 0.9);
+}
+.r-toast:hover {
+	border-color: rgba(255, 255, 255, 0.2);
+}
+.r-toast.r-toast-hide {
+	animation: r-toast-out 0.25s ease-in forwards;
+}
+.r-toast-success { border-left-color: #22c55e; }
+.r-toast-error   { border-left-color: #ef4444; }
+.r-toast-info    { border-left-color: #3b82f6; }
+.r-toast-warning { border-left-color: #eab308; }
+.r-toast-title {
+	font-weight: 600;
+	font-size: 0.8rem;
+	margin-bottom: 0.125rem;
+	opacity: 0.7;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+@keyframes r-toast-in {
+	from { transform: translateX(120%); opacity: 0; }
+	to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes r-toast-out {
+	from { transform: translateX(0);    opacity: 1; }
+	to   { transform: translateX(120%); opacity: 0; }
+}
+</style>
+<script>
+// 右上角 Toast 通知兜底（未加载外部通知脚本时）
+(function() {
+	if (typeof rStatusMessage !== 'undefined' && typeof rShowMessage !== 'undefined') return;
+	var container = document.createElement('div');
+	container.className = 'r-toast-container';
+	document.addEventListener('DOMContentLoaded', function() {
+		document.body.appendChild(container);
+	});
+
+	function createToast(msg, type, title, timeout) {
+		if (!container.parentNode) document.body.appendChild(container);
+		var toast = document.createElement('div');
+		toast.className = 'r-toast r-toast-' + type;
+		var inner = '';
+		if (title) inner += '<div class="r-toast-title">' + title + '</div>';
+		inner += msg;
+		toast.innerHTML = inner;
+
+		var timer = null;
+		var dismissed = false;
+		function dismiss() {
+			if (dismissed) return;
+			dismissed = true;
+			toast.classList.add('r-toast-hide');
+			if (timer) clearTimeout(timer);
+			setTimeout(function() {
+				if (toast.parentNode) toast.parentNode.removeChild(toast);
+			}, 260);
+		}
+		toast.onclick = function() { dismiss(); };
+
+		if (timeout && timeout > 0) {
+			timer = setTimeout(dismiss, timeout);
+		}
+
+		container.appendChild(toast);
+		return { dismiss: dismiss, el: toast };
+	}
+
+	window.rStatusMessage = {
+		success: function(m, t) { createToast(m, 'success', t || null, 3000); },
+		error: function(m, t) { createToast(m, 'error', t || null, 5000); },
+		info: function(m, t) { createToast(m, 'info', t || null, 3000); },
+		warning: function(m) { createToast(m, 'warning', null, 4000); }
+	};
+
+	window.rShowMessage = function(msg, type, position, timeout) {
+		var typeClass = 'info';
+		if (type === 1 || type === 'success') typeClass = 'success';
+		else if (type === 2 || type === 'error') typeClass = 'error';
+		else if (type === 3 || type === 'warning') typeClass = 'warning';
+		return createToast(msg, typeClass, null, timeout || 3000);
+	};
+
+	window.rChangeMessage = function(instance, msg) {
+		if (instance && instance.el) {
+			instance.el.innerHTML = msg;
+		}
+	};
+})();
+</script>

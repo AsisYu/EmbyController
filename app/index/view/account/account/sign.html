@@ -9,7 +9,11 @@
     {if condition="$sitekey && $sitekey != ''"}
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" defer></script>
     {/if}
+    {if condition="config('app.notification_script_url') && config('app.notification_script_url') != ''"}
     <script src="{:config('app.notification_script_url')}"></script>
+    {else}
+    {include file='public/_toast_fallback' /}
+    {/if}
     <script src="/assets/index/js/jquery-3.7.1.min.js"></script>
     <style>
         body {
@@ -139,7 +143,7 @@
     {if $signkey == null || $signkey == ''}
 
     {if isset($errMsg) && $errMsg != null && $errMsg != ''}
-    rStatusMessage.error('{$errMsg}');
+    rStatusMessage.error({:json_encode($errMsg)});
     {if $errMsg == '签到链接已失效'}
     loadingText.innerHTML = '签到链接已失效<br />重新生成签到链接';
     {elseif $errMsg == '环境异常'}

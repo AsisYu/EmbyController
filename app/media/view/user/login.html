@@ -9,7 +9,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <meta name="description" content="专业的影视管理平台" />
     <meta name="author" content="{:config('app.tech_support_name')}" />
+    {if condition="config('app.notification_script_url') && config('app.notification_script_url') != ''"}
     <script src="{:config('app.notification_script_url')}"></script>
+    {else}
+    {include file='public/_toast_fallback' /}
+    {/if}
     {if condition="$sitekey && $sitekey != ''"}
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js"></script>
     {/if}
