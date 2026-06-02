@@ -34,11 +34,17 @@ class MediaAuth
         $url = str_replace('http://'.$_SERVER['HTTP_HOST'], '', $url);
         $url = str_replace('https://'.$_SERVER['HTTP_HOST'], '', $url);
 
+        // 去掉查询参数，避免 /media/user/login?redirect=xxx 无法匹配
+        $urlPath = parse_url($url, PHP_URL_PATH);
+        if ($urlPath) {
+            $url = $urlPath;
+        }
+
         if ($url == '/media' || $url == '/media/') {
             $url = '/media/index/index';
         }
 
-        // 如果未登录且不是访问登录页面，则重定向到登录页面
+        // 如果未登录且不是访问白名单页面，则重定向到登录页面
         $allowList = [
             '/media/user/login',
             '/media/user/register',
