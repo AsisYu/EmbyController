@@ -95,20 +95,10 @@ class Media extends BaseController
                                     if ($flag) {
                                         sendTGMessageToGroup('用户' . ($user['nickName']??$user['userName']) . '正在使用黑名单客户端: ' . $session['Client'] . '，开始封禁用户');
                                         $embyUserId = $data['User']['Id'];
-                                        $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
-                                        $data = [
-                                            'IsDisabled' => true
-                                        ];
-                                        $ch = curl_init($url);
-                                        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                                            'accept: */*',
-                                            'Content-Type: application/json'
+                                        $embyResult = embyApiRequest('POST', 'Users/' . $embyUserId . '/Policy', ['IsDisabled' => true], [
+                                            'headers' => ['accept: */*']
                                         ]);
-                                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-                                        $response = curl_exec($ch);
-                                        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 || curl_getinfo($ch, CURLINFO_HTTP_CODE) == 204) {
+                                        if ($embyResult['httpCode'] == 200 || $embyResult['httpCode'] == 204) {
                                             $mediaMaturityTemplate = '您的' . Config::get('app.app_name') . '账号已经禁止使用。';
 
                                             sendTGMessage($user['id'], '您的' . Config::get('app.app_name') . '账号已经禁止使用。');
@@ -228,20 +218,10 @@ class Media extends BaseController
                                     } else if ($embyDevideCount >= $maxActiveDeviceCount) {
                                         sendTGMessageToGroup('用户' . ($user['nickName']??$user['userName']) . '一周内使用设备数量达到(超过)' . $maxActiveDeviceCount . '个，正在封禁用户');
                                         $embyUserId = $data['User']['Id'];
-                                        $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
-                                        $data = [
-                                            'IsDisabled' => true
-                                        ];
-                                        $ch = curl_init($url);
-                                        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                                            'accept: */*',
-                                            'Content-Type: application/json'
+                                        $embyResult = embyApiRequest('POST', 'Users/' . $embyUserId . '/Policy', ['IsDisabled' => true], [
+                                            'headers' => ['accept: */*']
                                         ]);
-                                        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-                                        $response = curl_exec($ch);
-                                        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 || curl_getinfo($ch, CURLINFO_HTTP_CODE) == 204) {
+                                        if ($embyResult['httpCode'] == 200 || $embyResult['httpCode'] == 204) {
                                             $mediaMaturityTemplate = '您的' . Config::get('app.app_name') . '账号已经禁止使用。';
                                             sendTGMessage($user['id'], '您的' . Config::get('app.app_name') . '账号已经禁止使用。');
                                             if ($user && $user['email']) {

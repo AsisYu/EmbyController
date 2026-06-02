@@ -149,8 +149,53 @@ function getHttpResponse($url, $post = false, $timeout = 10){
         curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
     }
     $response = curl_exec($ch);
+    if ($response === false) {
+        $error = curl_error($ch);
+        curl_close($ch);
+        trace("getHttpResponse cURL error: " . $error, 'error');
+        return false;
+    }
     curl_close($ch);
     return $response;
+}
+
+function embyApiRequest($method, $path, $data = null, $options = [])
+{
+    $baseUrl = $options['baseUrl'] ?? Config::get('media.urlBase');
+    $apiKey = $options['apiKey'] ?? Config::get('media.apiKey');
+
+    if (!$baseUrl || !$apiKey) {
+        return ['success' => false, 'httpCode' => 0, 'data' => null, 'body' => '', 'error' => 'Emby API 未配置，请联系管理员'];
+    }
+
+    $url = $baseUrl . $path;
+    $sep = (strpos($url, '?') === false) ? '?' : '&';
+    $url .= $sep . 'api_key=' . $apiKey;
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, strtoupper($method));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, $options['timeout'] ?? 10);
+
+    $defaultHeaders = ['accept: application/json'];
+    if ($data !== null) {
+        $defaultHeaders[] = 'Content-Type: application/json';
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+    }
+    $headers = isset($options['headers']) ? array_merge($defaultHeaders, $options['headers']) : $defaultHeaders;
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) {
+        return ['success' => false, 'httpCode' => 0, 'data' => null, 'body' => '', 'error' => '无法连接到 Emby 服务器: ' . $curlError];
+    }
+
+    $decoded = json_decode($response, true);
+    return ['success' => true, 'httpCode' => $httpCode, 'data' => $decoded, 'body' => $response, 'error' => null];
 }
 
 function xfyun($inComeMessage){
@@ -355,9 +400,14 @@ function judgeCloudFlare($type = 'noninteractive', $cfToken = ''){
     curl_setopt($ch, CURLOPT_POST, 1);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $vdata);
     $output = curl_exec($ch);
+    if ($output === false) {
+        curl_close($ch);
+        trace("Cloudflare Turnstile cURL error: " . curl_error($ch), 'error');
+        return false;
+    }
     curl_close($ch);
     $output = json_decode($output, true);
-    if (!$output['success']) {
+    if (!$output || !isset($output['success']) || !$output['success']) {
         return false;
     }
     return true;

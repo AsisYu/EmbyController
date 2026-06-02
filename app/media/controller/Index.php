@@ -81,20 +81,12 @@ class Index extends BaseController
                 $lineList = Config::get('media.lineList');
                 $i = 0;
                 foreach ($lineList as $line) {
-                    $url = $line['url'] . '/emby/System/Ping?api_key=' . Config::get('media.apiKey');
                     try {
-                        $ch = curl_init($url);
-                        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                            'accept: */*'
+                        $result = embyApiRequest('GET', 'System/Ping', null, [
+                            'baseUrl' => $line['url'] . '/emby/',
+                            'headers' => ['accept: */*']
                         ]);
-                        curl_exec($ch);
-                        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
-                            $status = 1;
-                        } else {
-                            $status = 0;
-                        }
+                        $status = ($result['httpCode'] == 200) ? 1 : 0;
                     } catch (\Exception $e) {
                         $status = 0;
                     }
@@ -139,14 +131,8 @@ class Index extends BaseController
             if (Cache::get('latestMedia-'.$embyUserId)) {
                 $latestMedia = Cache::get('latestMedia-'.$embyUserId);
             } else {
-                $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Items/Latest?EnableImages=true&EnableUserData=false&api_key=' . Config::get('media.apiKey');
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'accept: application/json'
-                ]);
-                $latestMedia = curl_exec($ch);
+                $result = embyApiRequest('GET', 'Users/' . $embyUserId . '/Items/Latest?EnableImages=true&EnableUserData=false');
+                $latestMedia = $result['body'];
                 Cache::set('latestMedia-'.$embyUserId, $latestMedia, 600);
             }
             return json(['code' => 200, 'latestMedia' => json_decode($latestMedia, true)]);
@@ -165,15 +151,12 @@ class Index extends BaseController
                     $embyUserId = Config::get('media.adminUserId');
                 }
                 while (1){
-                    $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Items/' . $data['mediaId'] . '?api_key=' . Config::get('media.apiKey');
-                    $ch = curl_init($url);
-                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                        'accept: application/json'
-                    ]);
-                    $metaData = json_decode(curl_exec($ch), true);
+                    $result = embyApiRequest('GET', 'Users/' . $embyUserId . '/Items/' . $data['mediaId']);
+                    $metaData = $result['data'];
 
+                    if (!$metaData) {
+                        return json(['code' => 400, 'message' => $result['error'] ?? '获取媒体数据失败']);
+                    }
                     if ($metaData['Type'] == "Episode" && isset($metaData['SeriesId'])) {
                         $data['mediaId'] = $metaData['SeriesId'];
                     } else {
@@ -244,19 +227,14 @@ class Index extends BaseController
                 $file = file_get_contents('static/media/img/movie-img.jpeg');
                 return response($file, 200, ['Content-Type' => 'image/jpeg']);
             }
-            $url = Config::get('media.urlBase') . 'Items/' . $id . '/Images/Primary?quality=80&api_key=' . Config::get('media.apiKey');
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: */*'
+            $result = embyApiRequest('GET', 'Items/' . $id . '/Images/Primary?quality=80', null, [
+                'headers' => ['accept: */*']
             ]);
-            $response = curl_exec($ch);
-            if ($response == '' || $response == 'Object reference not set to an instance of an object.') {
+            if (!$result['success'] || $result['body'] == '' || $result['body'] == 'Object reference not set to an instance of an object.') {
                 $file = file_get_contents('static/media/img/movie-img.jpeg');
                 return response($file, 200, ['Content-Type' => 'image/jpeg']);
             }
-            return response($response, 200, ['Content-Type' => 'image/jpeg']);
+            return response($result['body'], 200, ['Content-Type' => 'image/jpeg']);
         }
     }
 

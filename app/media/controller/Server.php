@@ -87,14 +87,8 @@ class Server extends BaseController
         if ($embyUserFromDatabase && $embyUserFromDatabase['embyId'] != null) {
             $embyId = $embyUserFromDatabase['embyId'];
             $activateTo = $embyUserFromDatabase['activateTo'];
-            $url = Config::get('media.urlBase') . 'Users/' . $embyId . '?api_key=' . Config::get('media.apiKey');
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: application/json'
-            ]);
-            $embyUserFromEmby = json_decode(curl_exec($ch));
+            $result = embyApiRequest('GET', 'Users/' . $embyId);
+            $embyUserFromEmby = $result['success'] ? json_decode($result['body']) : null;
         } else {
             $embyUserFromEmby = null;
             $activateTo = null;
@@ -120,25 +114,14 @@ class Server extends BaseController
                 $embyUserModel = new EmbyUserModel();
                 $user = $embyUserModel->where('userId', Session::get('r_user')->id)->find();
                 if (isset($user->embyId)) {
-                    $url = Config::get('media.urlBase') . 'Users/' . $user->embyId . '/Password?api_key=' . Config::get('media.apiKey');
-                    $data = [
+                    $result = embyApiRequest('POST', 'Users/' . $user->embyId . '/Password', [
                         'Id' => $user->embyId,
                         'NewPw' => $data['password'],
-//                        'ResetPassword' => true
-                    ];
-                    $ch = curl_init($url);
-                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                        'accept: application/json',
-                        'Content-Type: application/json'
                     ]);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-                    $response = curl_exec($ch);
-                    if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 || curl_getinfo($ch, CURLINFO_HTTP_CODE) == 204) {
+                    if ($result['httpCode'] == 200 || $result['httpCode'] == 204) {
                         return json(['code' => 200, 'message' => '修改成功']);
                     } else {
-                        return json(['code' => 400, 'message' => $response]);
+                        return json(['code' => 400, 'message' => $result['error'] ?? $result['body']]);
                     }
                 } else {
                     return json(['code' => 400, 'message' => '请先创建Emby账号']);
@@ -171,31 +154,16 @@ class Server extends BaseController
                 return json(['code' => 500, 'message' => 'Emby API 未配置，请联系管理员']);
             }
 
-            $url = Config::get('media.urlBase') . 'Users/New?api_key=' . Config::get('media.apiKey');
-            $data = [
+            $result = embyApiRequest('POST', 'Users/New', [
                 'Name' => $embyUserName,
                 'CopyFromUserId' => Config::get('media.UserTemplateId'),
-                'UserCopyOptions' => [
-                    'UserPolicy',
-                    'UserConfiguration'
-                ]
-            ];
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: application/json',
-                'Content-Type: application/json'
+                'UserCopyOptions' => ['UserPolicy', 'UserConfiguration']
             ]);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
+            $httpCode = $result['httpCode'];
 
-            if ($response === false || $httpCode === 0) {
-                return json(['code' => 500, 'message' => '无法连接到 Emby 服务器']);
+            if (!$result['success']) {
+                return json(['code' => 500, 'message' => $result['error']]);
             }
-            // 如果是400错误，说明用户名已存在
             if ($httpCode == 400) {
                 return json(['code' => 400, 'message' => '用户名已存在']);
             }
@@ -203,7 +171,7 @@ class Server extends BaseController
                 return json(['code' => 500, 'message' => 'Emby 服务器错误 (HTTP ' . $httpCode . ')']);
             }
 
-            $decoded = json_decode($response, true);
+            $decoded = $result['data'];
             if (!$decoded || !isset($decoded['Id'])) {
                 return json(['code' => 500, 'message' => 'Emby 返回数据异常']);
             }
@@ -215,19 +183,9 @@ class Server extends BaseController
                 'embyId' => $embyUserId,
             ]);
 
-            $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
-            $data = ['IsDisabled' => true];
-
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: */*',
-                'Content-Type: application/json'
+            embyApiRequest('POST', 'Users/' . $embyUserId . '/Policy', ['IsDisabled' => true], [
+                'headers' => ['accept: */*']
             ]);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            curl_exec($ch);
-            curl_close($ch);
 
             Session::set('m_embyId', $embyUserId);
 
@@ -253,19 +211,11 @@ class Server extends BaseController
         $serverList = [];
         $lineList = Config::get('media.lineList');
         foreach ($lineList as $line) {
-            $url = $line['url'] . '/emby/System/Ping?api_key=' . Config::get('media.apiKey');
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: */*'
+            $result = embyApiRequest('GET', 'System/Ping', null, [
+                'baseUrl' => $line['url'] . '/emby/',
+                'headers' => ['accept: */*']
             ]);
-            $response = curl_exec($ch);
-            if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
-                $status = 1;
-            } else {
-                $status = 0;
-            }
+            $status = ($result['httpCode'] == 200) ? 1 : 0;
             $serverList[] = [
                 'name' => $line['name'],
                 'url' => $line['url'],
@@ -295,15 +245,8 @@ class Server extends BaseController
                     $sessionList = Cache::get('sessionList-' . Session::get('r_user')->id);
                     return json(['code' => 200, 'message' => '获取成功', 'data' => $sessionList]);
                 }
-                $url = Config::get('media.urlBase') . 'Sessions?api_key=' . Config::get('media.apiKey');
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'accept: application/json'
-                ]);
-                $response = curl_exec($ch);
-                $allSessionList = json_decode($response, true);
+                $result = embyApiRequest('GET', 'Sessions');
+                $allSessionList = $result['data'] ?: [];
                 $sessionList = [];
                 foreach ($allSessionList as $session) {
                     if (isset($session['UserId']) && $session['UserId'] == $user->embyId) {
@@ -418,20 +361,10 @@ class Server extends BaseController
             if (!$device) {
                 return json(['code' => 400, 'message' => '设备不存在或者你没有设备所有权', 'deviceId' => $deviceId]);
             }
-            $url = Config::get('media.urlBase') . 'Devices/Delete?api_key=' . Config::get('media.apiKey');
-            $data = [
+            $result = embyApiRequest('POST', 'Devices/Delete', [
                 'Id' => $deviceId
-            ];
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: application/json',
-                'Content-Type: application/json'
             ]);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-            $response = curl_exec($ch);
-            if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 || curl_getinfo($ch, CURLINFO_HTTP_CODE) == 204) {
+            if ($result['httpCode'] == 200 || $result['httpCode'] == 204) {
                 $embyDeviceModel
                     ->where('deviceId', $deviceId)
                     ->update([
@@ -439,7 +372,7 @@ class Server extends BaseController
                     ]);
                 return json(['code' => 200, 'message' => '删除成功']);
             } else {
-                return json(['code' => 400, 'message' => $response]);
+                return json(['code' => 400, 'message' => $result['error'] ?? $result['body']]);
             }
         }
     }
@@ -452,15 +385,8 @@ class Server extends BaseController
         if (Request::isPost()) {
             $data = Request::post();
             $ids = $data['ids'];
-            $url = Config::get('media.urlBase') . 'Items?Ids=' . join(',', $ids) . '&EnableImages=true&&api_key=' . Config::get('media.apiKey');
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: application/json'
-            ]);
-            $response = curl_exec($ch);
-            return json(['code' => 200, 'message' => '获取成功', 'data' => json_decode($response, true)]);
+            $result = embyApiRequest('GET', 'Items?Ids=' . join(',', $ids) . '&EnableImages=true');
+            return json(['code' => 200, 'message' => '获取成功', 'data' => $result['data']]);
         }
     }
 
@@ -474,21 +400,13 @@ class Server extends BaseController
         $embyUserModel = new EmbyUserModel();
         $user = $embyUserModel->where('userId', Session::get('r_user')->id)->find();
         if (isset($user->embyId)) {
-            $url = Config::get('media.urlBase') . 'Users/' . $user->embyId . '/Views?IncludeExternalContent=true&api_key=' . Config::get('media.apiKey');
-//            $url = Config::get('media.urlBase') . 'Shows/NextUp?UserId=' . $user->embyId . '&api_key=' . Config::get('media.apiKey');
-            $ch = curl_init($url);
-            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'accept: application/json'
-            ]);
-            $response = curl_exec($ch);
-            $viewList = json_decode($response, true);
+            $result = embyApiRequest('GET', 'Users/' . $user->embyId . '/Views?IncludeExternalContent=true');
+            $viewList = $result['data'];
             View::assign('viewList', $viewList);
         } else {
             $viewList = null;
         }
-        echo $response;
+        echo $result['body'];
 //        echo json_encode($viewList);
         die();
         View::assign('viewList', $viewList);
@@ -542,19 +460,12 @@ class Server extends BaseController
             $userModel = new UserModel();
             $user = $userModel->where('id', Session::get('r_user')->id)->find();
             if ($user->rCoin >= 1 && $user->authority >= 0) {
-                $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
                 $profile = $this->getTmpUserProfile();
                 $profile['IsDisabled'] = false;
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'accept: */*',
-                    'Content-Type: application/json'
+                $result = embyApiRequest('POST', 'Users/' . $embyUserId . '/Policy', $profile, [
+                    'headers' => ['accept: */*']
                 ]);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($profile));
-                $response = curl_exec($ch);
-                if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 || curl_getinfo($ch, CURLINFO_HTTP_CODE) == 204) {
+                if ($result['httpCode'] == 200 || $result['httpCode'] == 204) {
                     $activateTo = date('Y-m-d H:i:s', time() + 86400);
                     $embyUser->activateTo = $activateTo;
                     $embyUser->save();
@@ -583,7 +494,7 @@ class Server extends BaseController
                 } else {
                     return json([
                         'code' => 400,
-                        'message' => $response
+                        'message' => $result['error'] ?? $result['body']
                     ]);
                 }
             } else {
@@ -612,19 +523,12 @@ class Server extends BaseController
             $exchangeCodeModel = new ExchangeCodeModel();
             $exchangeCode = $exchangeCodeModel->where('code', $code)->find();
             if ($exchangeCode && $exchangeCode['type'] == 0 && $exchangeCode['exchangeType'] == 1) {
-                $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
                 $profile = $this->getTmpUserProfile();
                 $profile['IsDisabled'] = false;
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'accept: */*',
-                    'Content-Type: application/json'
+                $result = embyApiRequest('POST', 'Users/' . $embyUserId . '/Policy', $profile, [
+                    'headers' => ['accept: */*']
                 ]);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($profile));
-                $response = curl_exec($ch);
-                if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 || curl_getinfo($ch, CURLINFO_HTTP_CODE) == 204) {
+                if ($result['httpCode'] == 200 || $result['httpCode'] == 204) {
                     $activateTo = date('Y-m-d H:i:s', time() + 86400);
                     $embyUser->activateTo = $activateTo;
                     $embyUser->save();
@@ -645,6 +549,11 @@ class Server extends BaseController
                     return json([
                         'code' => 200,
                         'message' => '激活成功'
+                    ]);
+                } else {
+                    return json([
+                        'code' => 400,
+                        'message' => $result['error'] ?? '激活失败，请重试'
                     ]);
                 }
             } else {
@@ -926,15 +835,11 @@ class Server extends BaseController
                 $serverList = [];
                 $lineList = Config::get('media.lineList');
                 foreach ($lineList as $line) {
-                    $url = $line['url'] . '/emby/System/Ping?api_key=' . Config::get('media.apiKey');
-                    $ch = curl_init($url);
-                    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                        'accept: */*'
+                    $result = embyApiRequest('GET', 'System/Ping', null, [
+                        'baseUrl' => $line['url'] . '/emby/',
+                        'headers' => ['accept: */*']
                     ]);
-                    $response = curl_exec($ch);
-                    if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200 && $response == 'Emby Server') {
+                    if ($result['httpCode'] == 200 && $result['body'] == 'Emby Server') {
                         $status = 1;
                     } else {
                         $status = 0;
@@ -1238,20 +1143,9 @@ class Server extends BaseController
     public function getTmpUserProfile()
     {
         $embyId = Config::get('media.UserTemplateId');
-        $url = Config::get('media.urlBase') . 'Users/' . $embyId . '?api_key=' . Config::get('media.apiKey');
-        $ch = curl_init($url);
-        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'GET');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'accept: application/json'
-        ]);
-        $response = curl_exec($ch);
-
-        if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 200) {
-            $userFromEmby = json_decode($response, true);
-            if (isset($userFromEmby['Policy'])) {
-                return $userFromEmby['Policy'];
-            }
+        $result = embyApiRequest('GET', 'Users/' . $embyId);
+        if ($result['httpCode'] == 200 && isset($result['data']['Policy'])) {
+            return $result['data']['Policy'];
         }
         return null;
     }
