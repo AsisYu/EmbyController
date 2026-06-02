@@ -824,9 +824,7 @@ function renderSearchResults(results) {
                 if (!html) return;
                 // 检测是否为完整 HTML 页面（不支持 PJAX 的页面）
                 if (html.trim().indexOf('<!DOCTYPE') === 0 || html.trim().indexOf('<html') === 0) {
-                    document.open();
-                    document.write(html);
-                    document.close();
+                    window.location.href = url;
                     return;
                 }
                 var titleMatch = html.match(/<title>(.*?)<\/title>/i);
