@@ -1022,7 +1022,6 @@ class Server extends BaseController
                         }
 
                         return "success";
-                    }
 
                 } else {
                     return json([
