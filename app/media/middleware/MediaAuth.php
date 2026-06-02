@@ -36,6 +36,12 @@ class MediaAuth
             $url = $urlPath;
         }
 
+        // 去掉 URL 后缀（如 .html），config('route.url_html_suffix') = 'html'
+        $suffix = config('route.url_html_suffix');
+        if ($suffix && str_ends_with($url, '.' . $suffix)) {
+            $url = substr($url, 0, -(strlen($suffix) + 1));
+        }
+
         // 去掉尾部斜杠
         $url = rtrim($url, '/');
         if ($url === '') {
