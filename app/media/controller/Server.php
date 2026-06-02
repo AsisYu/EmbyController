@@ -166,6 +166,11 @@ class Server extends BaseController
         if (Request::isPost()) {
             $data = Request::post();
             $embyUserName = $data['embyUserName'];
+
+            if (!Config::get('media.apiKey') || !Config::get('media.urlBase')) {
+                return json(['code' => 500, 'message' => 'Emby API 未配置，请联系管理员']);
+            }
+
             $url = Config::get('media.urlBase') . 'Users/New?api_key=' . Config::get('media.apiKey');
             $data = [
                 'Name' => $embyUserName,
@@ -184,36 +189,49 @@ class Server extends BaseController
             ]);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             $response = curl_exec($ch);
-            // 如果是400错误，说明用户名已存在
-            if (curl_getinfo($ch, CURLINFO_HTTP_CODE) == 400) {
-                return json(['code' => 400, 'message' => '用户名已存在']);
-            } else {
-                $embyUserId = json_decode($response, true)['Id'];
-                $embyUserModel = new EmbyUserModel();
-                $embyUserModel->save([
-                    'userId' => Session::get('r_user')->id,
-                    'embyId' => $embyUserId,
-                ]);
-                $embyUser = $embyUserId;
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
 
-                $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
-                $data = ['IsDisabled' => true];
-
-                $ch = curl_init($url);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'accept: */*',
-                    'Content-Type: application/json'
-                ]);
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-
-                curl_exec($ch);
-
-                Session::set('m_embyId', $embyUserId);
-
-                return json(['code' => 200, 'message' => '创建成功']);
+            if ($response === false || $httpCode === 0) {
+                return json(['code' => 500, 'message' => '无法连接到 Emby 服务器']);
             }
+            // 如果是400错误，说明用户名已存在
+            if ($httpCode == 400) {
+                return json(['code' => 400, 'message' => '用户名已存在']);
+            }
+            if ($httpCode >= 400) {
+                return json(['code' => 500, 'message' => 'Emby 服务器错误 (HTTP ' . $httpCode . ')']);
+            }
+
+            $decoded = json_decode($response, true);
+            if (!$decoded || !isset($decoded['Id'])) {
+                return json(['code' => 500, 'message' => 'Emby 返回数据异常']);
+            }
+
+            $embyUserId = $decoded['Id'];
+            $embyUserModel = new EmbyUserModel();
+            $embyUserModel->save([
+                'userId' => Session::get('r_user')->id,
+                'embyId' => $embyUserId,
+            ]);
+
+            $url = Config::get('media.urlBase') . 'Users/' . $embyUserId . '/Policy?api_key=' . Config::get('media.apiKey');
+            $data = ['IsDisabled' => true];
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'POST');
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'accept: */*',
+                'Content-Type: application/json'
+            ]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_exec($ch);
+            curl_close($ch);
+
+            Session::set('m_embyId', $embyUserId);
+
+            return json(['code' => 200, 'message' => '创建成功']);
         } else if (Request::isGet()) {
             return view();
         }
