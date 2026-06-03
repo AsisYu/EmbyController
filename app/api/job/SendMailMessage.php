@@ -2,26 +2,35 @@
 namespace app\api\job;
 
 use think\facade\Config;
-use think\facade\Log;
 use think\queue\Job;
 use mailer\Mailer;
 
 class SendMailMessage
 {
+    private function jobLog($msg)
+    {
+        $logDir = __DIR__ . '/../../runtime/log';
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0777, true);
+        }
+        $line = date('Y-m-d H:i:s') . " " . $msg . "\n";
+        @file_put_contents($logDir . '/mailer_job.log', $line, FILE_APPEND);
+    }
+
     public function fire(Job $job, $data)
     {
         $to = $data['to'] ?? 'unknown';
         $subject = $data['subject'] ?? 'unknown';
-        Log::info("[SendMailMessage] job start, to={$to} subject={$subject}");
+        $this->jobLog("[START] to={$to} subject={$subject}");
 
         try {
             if ($job->isDeleted()) {
-                Log::info("[SendMailMessage] job already deleted, skip");
+                $this->jobLog("[SKIP] job already deleted");
                 return;
             }
 
             if (!Config::get('mailer.enable')) {
-                Log::warning("[SendMailMessage] mailer disabled in config, skip");
+                $this->jobLog("[SKIP] mailer disabled in config");
                 $job->delete();
                 return;
             }
@@ -45,6 +54,7 @@ class SendMailMessage
                 if (!empty($socks5Config['username']) && !empty($socks5Config['password'])) {
                     $streamContext['socks5']['proxy'] = "socks5://{$socks5Config['username']}:{$socks5Config['password']}@{$socks5Config['host']}:{$socks5Config['port']}";
                 }
+                $this->jobLog("[INFO] using socks5 proxy");
                 $mailer->setStreamOptions($streamContext);
             }
 
@@ -56,15 +66,15 @@ class SendMailMessage
 
             $mailer->to($to)->subject($subject)->send();
 
-            Log::info("[SendMailMessage] success, to={$to}");
+            $this->jobLog("[SUCCESS] sent to {$to}");
             $job->delete();
 
         } catch (\Exception $e) {
             $attempts = $job->attempts();
-            Log::error("[SendMailMessage] attempt {$attempts} failed: " . $e->getMessage());
+            $this->jobLog("[FAIL] attempt {$attempts}: " . $e->getMessage());
 
             if ($attempts >= 3) {
-                Log::error("[SendMailMessage] max retries reached, deleting job");
+                $this->jobLog("[FAIL] max retries reached, deleting job");
                 $job->delete();
                 return;
             }
@@ -72,4 +82,4 @@ class SendMailMessage
             $job->release(60);
         }
     }
-} 
+}
