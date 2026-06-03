@@ -388,14 +388,7 @@ class User extends BaseController
                         $findPasswordTemplate = str_replace('{Email}', $Email, $findPasswordTemplate);
                         $findPasswordTemplate = str_replace('{SiteUrl}', $SiteUrl, $findPasswordTemplate);
 
-//                        sendEmailForce($user->email, '找回密码——' . Config::get('app.app_name'), $findPasswordTemplate);
-
-                        \think\facade\Queue::push('app\api\job\SendMailMessage', [
-                            'to' => $user->email,
-                            'subject' => '找回密码——' . Config::get('app.app_name'),
-                            'content' => $findPasswordTemplate,
-                            'isHtml' => true
-                        ], 'main');
+                        sendEmailForce($user->email, '找回密码——' . Config::get('app.app_name'), $findPasswordTemplate);
 
                         sendTGMessage($user->id, "您正在尝试找回密码，如果不是您本人操作，请忽略此消息。");
                         sendStationMessage($user->id, "您正在尝试找回密码，如果不是您本人操作，请忽略此消息。");
@@ -745,19 +738,16 @@ class User extends BaseController
 
         $logDir = dirname(__DIR__, 3) . '/runtime/log';
         if (!is_dir($logDir)) { mkdir($logDir, 0777, true); }
+        $queueConn = \think\facade\Config::get('queue.default');
         file_put_contents($logDir . '/mailer_job.log',
-            date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode pushing job: to={$email} subject=验证码\n",
+            date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode: to={$email} queue_conn={$queueConn}\n",
             FILE_APPEND);
 
-        \think\facade\Queue::push('app\api\job\SendMailMessage', [
-            'to' => $email,
-            'subject' => '【' . $code . '】' . Config::get('app.app_name') . '验证码',
-            'content' => $verifyCodeTemplate,
-            'isHtml' => true
-        ], 'main');
+        // 直接同步发送，绕过不可靠的队列
+        sendEmailForce($email, '【' . $code . '】' . Config::get('app.app_name') . '验证码', $verifyCodeTemplate);
 
         file_put_contents($logDir . '/mailer_job.log',
-            date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode job pushed OK\n",
+            date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode sendEmailForce done\n",
             FILE_APPEND);
 
         return json(['code' => 200, 'message' => '验证码已尝试发送']);

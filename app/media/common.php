@@ -31,6 +31,15 @@ function sendTGMessage($id, $message)
     }
 }
 
+function sendEmailForce($email, $title, $message)
+{
+    $mailer = new Mailer();
+    $mailer->html($message);
+    $mailer->subject($title);
+    $mailer->to($email);
+    $mailer->send();
+}
+
 function sendTGMessageToGroup($message)
 {
     $token = Config::get('telegram.botConfig.bots.default.token');
