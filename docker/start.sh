@@ -49,7 +49,7 @@ php-fpm -D
 echo "Starting Supervisor..."
 mkdir -p /app/runtime/log
 supervisord -c /app/docker/supervisord.conf &
-sleep 1
+sleep 5
 if ! supervisorctl -c /app/docker/supervisord.conf status queue-worker | grep -q RUNNING; then
     echo "ERROR: Supervisor queue-worker failed to start"
     exit 1
