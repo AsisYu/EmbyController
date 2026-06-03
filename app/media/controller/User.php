@@ -387,8 +387,9 @@ class User extends BaseController
                         $findPasswordTemplate = str_replace('{Email}', $Email, $findPasswordTemplate);
                         $findPasswordTemplate = str_replace('{SiteUrl}', $SiteUrl, $findPasswordTemplate);
 
-                        // 先缓存验证码再入队，避免 SMTP 阻塞页面
-                        Cache::set('verifyCode_forgot_' . $user->email, $code, 300);
+                        $cacheKey = 'verifyCode_forgot_' . $user->email;
+                        // 先缓存验证码再入队，入队失败则回滚（仅当缓存未被覆盖时）
+                        Cache::set($cacheKey, $code, 300);
                         try {
                             \think\facade\Queue::push('app\api\job\SendMailMessage', [
                                 'to' => $user->email,
@@ -397,7 +398,9 @@ class User extends BaseController
                                 'isHtml' => true,
                             ], 'main');
                         } catch (\Throwable $e) {
-                            Cache::delete('verifyCode_forgot_' . $user->email);
+                            if (Cache::get($cacheKey) == $code) {
+                                Cache::delete($cacheKey);
+                            }
                             $results = '系统繁忙，请稍后重试';
                             View::assign('email', $email);
                             View::assign('result', $results);
@@ -728,6 +731,10 @@ class User extends BaseController
             return json(['code' => 400, 'message' => '注册功能已关闭']);
         }
 
+        if (!Config::get('mailer.enable')) {
+            return json(['code' => 400, 'message' => '邮件功能未启用']);
+        }
+
         $code = rand(100000, 999999);
         $cacheKey = 'verifyCode_' . $action . '_' . $email;
         if (Cache::get($cacheKey)) {
@@ -749,7 +756,7 @@ class User extends BaseController
         $verifyCodeTemplate = str_replace('{Email}', $email, $verifyCodeTemplate);
         $verifyCodeTemplate = str_replace('{SiteUrl}', $SiteUrl, $verifyCodeTemplate);
 
-        // 先缓存验证码再入队，入队失败则回滚缓存
+        // 先缓存验证码再入队，入队失败则回滚（仅当缓存未被覆盖时）
         Cache::set($cacheKey, $code, 300);
         try {
             \think\facade\Queue::push('app\api\job\SendMailMessage', [
@@ -759,7 +766,9 @@ class User extends BaseController
                 'isHtml' => true,
             ], 'main');
         } catch (\Throwable $e) {
-            Cache::delete($cacheKey);
+            if (Cache::get($cacheKey) == $code) {
+                Cache::delete($cacheKey);
+            }
             return json(['code' => 500, 'message' => '系统繁忙，请稍后重试']);
         }
 

@@ -188,7 +188,9 @@ class Admin extends BaseController
                             'content' => $requestAlreadyReply,
                             'isHtml' => true,
                         ], 'main');
-                    } catch (\Throwable $e) {}
+                    } catch (\Throwable $e) {
+                        trace("Queue push failed (工单回复通知): " . $e->getMessage(), 'error');
+                    }
                 }
             }
 

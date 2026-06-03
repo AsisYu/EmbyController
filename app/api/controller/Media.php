@@ -137,7 +137,9 @@ class Media extends BaseController
                                                             'content' => $sysnotificiations,
                                                             'isHtml' => true,
                                                         ], 'main');
-                                                    } catch (\Throwable $e) {}
+                                                    } catch (\Throwable $e) {
+                                                        trace("Queue push failed (封禁通知): " . $e->getMessage(), 'error');
+                                                    }
                                                 }
                                             }
                                         }
@@ -260,7 +262,9 @@ class Media extends BaseController
                                                             'content' => $sysnotificiations,
                                                             'isHtml' => true,
                                                         ], 'main');
-                                                    } catch (\Throwable $e) {}
+                                                    } catch (\Throwable $e) {
+                                                        trace("Queue push failed (封禁通知): " . $e->getMessage(), 'error');
+                                                    }
                                                 }
                                             }
                                         }

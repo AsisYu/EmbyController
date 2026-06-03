@@ -128,7 +128,7 @@ class Mailer
                     $this->command($socket, base64_encode($password), true);
                 } elseif (stripos($authMethods, 'PLAIN') !== false) {
                     $this->info("authenticating via AUTH PLAIN as {$username}");
-                    $this->command($socket, base64_encode("\0{$username}\0{$password}"), true);
+                    $this->command($socket, "AUTH PLAIN " . base64_encode("\0{$username}\0{$password}"), true);
                 } else {
                     $this->err("no supported AUTH method, server offers: {$authMethods}");
                     $this->flushLog();

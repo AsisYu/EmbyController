@@ -1019,7 +1019,9 @@ class Server extends BaseController
                                         'content' => $sysnotificiations,
                                         'isHtml' => true,
                                     ], 'main');
-                                } catch (\Throwable $e) {}
+                                } catch (\Throwable $e) {
+                                    trace("Queue push failed (支付通知): " . $e->getMessage(), 'error');
+                                }
                             }
                         }
 

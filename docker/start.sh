@@ -52,6 +52,7 @@ supervisord -c /app/docker/supervisord.conf &
 sleep 1
 if ! supervisorctl -c /app/docker/supervisord.conf status queue-worker | grep -q RUNNING; then
     echo "ERROR: Supervisor queue-worker failed to start"
+    exit 1
 fi
 
 # 启动Nginx
