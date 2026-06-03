@@ -2,6 +2,7 @@
 namespace mailer;
 
 use think\facade\Config;
+use think\facade\Log;
 
 class Mailer
 {
@@ -11,6 +12,7 @@ class Mailer
     private $contentType = 'text/html';
     private $streamOptions = [];
     private $config;
+    private $log = [];
 
     public function __construct()
     {
@@ -51,20 +53,26 @@ class Mailer
 
     public function send()
     {
+        $this->log = [];
+
         if (empty($this->to)) {
+            $this->err('no recipient set');
             throw new \RuntimeException('Mailer: no recipient set');
         }
         if (empty($this->subject)) {
+            $this->err('no subject set');
             throw new \RuntimeException('Mailer: no subject set');
         }
 
-        $host = $this->config['host'];
-        $port = $this->config['port'];
-        $scheme = $this->config['scheme'] ?? 'smtp';
+        $host     = $this->config['host'];
+        $port     = (int) $this->config['port'];
+        $scheme   = $this->config['scheme'] ?? 'smtp';
         $username = $this->config['username'];
         $password = $this->config['password'];
         $fromAddr = $this->config['from']['address'] ?? $username;
         $fromName = $this->config['from']['name'] ?? '';
+
+        $this->info("connecting to {$scheme}://{$host}:{$port}");
 
         $remote = ($scheme === 'smtps') ? "ssl://{$host}:{$port}" : "tcp://{$host}:{$port}";
 
@@ -74,10 +82,16 @@ class Mailer
 
         $socket = @stream_socket_client($remote, $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $ctx);
         if (!$socket) {
+            $this->err("connect failed: {$errstr} ({$errno})");
             throw new \RuntimeException("Mailer: cannot connect to {$host}:{$port} — {$errstr} ({$errno})");
         }
 
+        $this->info("connected, setting timeout");
+
+        stream_set_timeout($socket, 10);
+
         try {
+            // 读取服务器 greeting
             $this->readResponse($socket);
 
             // EHLO
@@ -85,21 +99,30 @@ class Mailer
 
             // STARTTLS for non-SSL connections on port 587
             if ($scheme === 'smtp' && $port == 587) {
+                $this->info("sending STARTTLS");
                 $this->command($socket, "STARTTLS");
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                $enabled = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                if (!$enabled) {
+                    $this->err("STARTTLS crypto negotiation failed");
+                    throw new \RuntimeException("Mailer: STARTTLS negotiation failed");
+                }
+                $this->info("TLS enabled, re-sending EHLO");
                 $this->command($socket, "EHLO {$host}");
             }
 
             // AUTH LOGIN
+            $this->info("authenticating as {$username}");
             $this->command($socket, "AUTH LOGIN");
             $this->command($socket, base64_encode($username));
             $this->command($socket, base64_encode($password));
+            $this->info("authenticated");
 
             // MAIL FROM
             $this->command($socket, "MAIL FROM:<{$fromAddr}>");
 
             // RCPT TO
             foreach ($this->to as $recipient) {
+                $this->info("sending to {$recipient}");
                 $this->command($socket, "RCPT TO:<{$recipient}>");
             }
 
@@ -111,19 +134,29 @@ class Mailer
             $headers .= "Subject: =?UTF-8?B?" . base64_encode($this->subject) . "?=\r\n";
             $headers .= "MIME-Version: 1.0\r\n";
             $headers .= "Content-Type: {$this->contentType}; charset=UTF-8\r\n";
+            $headers .= "Content-Transfer-Encoding: base64\r\n";
             $headers .= "Date: " . date('r') . "\r\n";
             $headers .= "X-Mailer: EmbyController\r\n";
             $headers .= "\r\n";
-            $headers .= $this->body;
-            $headers .= "\r\n.";
+            $headers .= chunk_split(base64_encode($this->body));
+            $headers .= "\r\n.\r\n";
 
+            $this->info("sending message body (" . strlen($headers) . " bytes)");
             fwrite($socket, $headers);
             $this->readResponse($socket);
 
-            // QUIT
+            $this->info("message accepted, sending QUIT");
             $this->command($socket, "QUIT");
+
+            $this->info("mail sent successfully to " . implode(', ', $this->to));
+        } catch (\Exception $e) {
+            $this->err("SMTP error: " . $e->getMessage());
+            throw $e;
         } finally {
-            fclose($socket);
+            if (is_resource($socket)) {
+                fclose($socket);
+            }
+            Log::write(implode("\n", $this->log), 'mailer');
         }
 
         return true;
@@ -131,6 +164,12 @@ class Mailer
 
     private function command($socket, $cmd)
     {
+        // AUTH LOGIN 命令中隐藏密码
+        $displayCmd = $cmd;
+        if (strlen($displayCmd) > 40 && !str_starts_with($displayCmd, 'EHLO') && !str_starts_with($displayCmd, 'STARTTLS')) {
+            $displayCmd = substr($displayCmd, 0, 15) . '...';
+        }
+        $this->info("C: {$displayCmd}");
         fwrite($socket, $cmd . "\r\n");
         return $this->readResponse($socket);
     }
@@ -138,16 +177,39 @@ class Mailer
     private function readResponse($socket)
     {
         $response = '';
-        while ($line = fgets($socket, 515)) {
+
+        while (!feof($socket)) {
+            $line = fgets($socket, 515);
+            if ($line === false) {
+                $meta = stream_get_meta_data($socket);
+                if ($meta['timed_out']) {
+                    $this->err("socket timed out while reading");
+                    throw new \RuntimeException("Mailer: socket timed out");
+                }
+                break;
+            }
+            if ($line === '') {
+                break;
+            }
             $response .= $line;
+            $this->info("S: " . rtrim($line));
             if (isset($line[3]) && $line[3] === ' ') {
                 break;
             }
         }
 
+        if (empty($response)) {
+            $meta = stream_get_meta_data($socket);
+            if ($meta['timed_out']) {
+                $this->err("socket timed out with no response");
+                throw new \RuntimeException("Mailer: socket timed out with no response");
+            }
+        }
+
         $code = (int) substr($response, 0, 3);
         if ($code >= 400) {
-            throw new \RuntimeException("Mailer: SMTP error — " . trim($response));
+            $this->err("SMTP error code {$code}: " . trim($response));
+            throw new \RuntimeException("Mailer: SMTP error {$code} — " . trim($response));
         }
 
         return $response;
@@ -159,5 +221,17 @@ class Mailer
             return "=?UTF-8?B?" . base64_encode($name) . "?= <{$email}>";
         }
         return "<{$email}>";
+    }
+
+    private function info($msg)
+    {
+        $line = date('Y-m-d H:i:s') . " [INFO] " . $msg;
+        $this->log[] = $line;
+    }
+
+    private function err($msg)
+    {
+        $line = date('Y-m-d H:i:s') . " [ERROR] " . $msg;
+        $this->log[] = $line;
     }
 }
