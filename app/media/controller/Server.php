@@ -1012,12 +1012,9 @@ class Server extends BaseController
                                 $sysnotificiations = str_replace('{Email}', $Email, $sysnotificiations);
                                 $sysnotificiations = str_replace('{SiteUrl}', $SiteUrl, $sysnotificiations);
 
-                                \think\facade\Queue::push('app\api\job\SendMailMessage', [
-                                    'to' => $user['email'],
-                                    'subject' => '账单支付成功 - ' . Config::get('app.app_name'),
-                                    'content' => $sysnotificiations,
-                                    'isHtml' => true
-                                ], 'main');
+                                try {
+                                    sendEmailForce($user['email'], '账单支付成功 - ' . Config::get('app.app_name'), $sysnotificiations);
+                                } catch (\Throwable $e) {}
                             }
                         }
 

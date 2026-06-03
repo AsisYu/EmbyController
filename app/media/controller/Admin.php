@@ -181,12 +181,9 @@ class Admin extends BaseController
                     $requestAlreadyReply = str_replace('{Email}', $Email, $requestAlreadyReply);
                     $requestAlreadyReply = str_replace('{SiteUrl}', $SiteUrl, $requestAlreadyReply);
 
-                    \think\facade\Queue::push('app\api\job\SendMailMessage', [
-                        'to' => $user->email,
-                        'subject' => '工单回复通知',
-                        'content' => $requestAlreadyReply,
-                        'isHtml' => true
-                    ], 'main');
+                    try {
+                        sendEmailForce($user->email, '工单回复通知', $requestAlreadyReply);
+                    } catch (\Throwable $e) {}
                 }
             }
 
