@@ -8,7 +8,7 @@ return [
         'sync' => [
             // 驱动方式
             'type'       => 'Sync',
-            'queue'      => 'telegram'
+            'queue'      => 'main'
         ],
         // 配置Redis
         'redis'    =>    [

@@ -95,14 +95,16 @@ class Mailer
 
         try {
             // 服务器 greeting
-            $this->readResponse($socket);
+            $greeting = $this->readResponse($socket);
 
-            // EHLO
-            $this->command($socket, "EHLO {$host}");
+            // EHLO — 获取服务器能力
+            $ehloResponse = $this->command($socket, "EHLO {$host}");
+            $capabilities = $this->parseCapabilities($ehloResponse);
+            $this->info("capabilities: " . implode(' ', array_keys($capabilities)));
 
-            // STARTTLS
-            if ($scheme === 'smtp' && $port == 587) {
-                $this->info("sending STARTTLS");
+            // STARTTLS — 根据服务器能力决定
+            if ($scheme !== 'smtps' && isset($capabilities['STARTTLS'])) {
+                $this->info("STARTTLS advertised, upgrading connection");
                 $this->command($socket, "STARTTLS");
                 $enabled = stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
                 if (!$enabled) {
@@ -111,14 +113,30 @@ class Mailer
                     throw new \RuntimeException("Mailer: STARTTLS negotiation failed");
                 }
                 $this->info("TLS enabled, re-sending EHLO");
-                $this->command($socket, "EHLO {$host}");
+                $ehloResponse = $this->command($socket, "EHLO {$host}");
+                $capabilities = $this->parseCapabilities($ehloResponse);
             }
 
             // AUTH LOGIN
-            $this->info("authenticating as {$username}");
-            $this->command($socket, "AUTH LOGIN");
-            $this->command($socket, base64_encode($username));
-            $this->command($socket, base64_encode($password));
+            if (isset($capabilities['AUTH'])) {
+                $authMethods = $capabilities['AUTH'];
+                $this->info("AUTH methods: {$authMethods}");
+                if (stripos($authMethods, 'LOGIN') !== false) {
+                    $this->info("authenticating via AUTH LOGIN as {$username}");
+                    $this->command($socket, "AUTH LOGIN");
+                    $this->command($socket, base64_encode($username), true);
+                    $this->command($socket, base64_encode($password), true);
+                } elseif (stripos($authMethods, 'PLAIN') !== false) {
+                    $this->info("authenticating via AUTH PLAIN as {$username}");
+                    $this->command($socket, base64_encode("\0{$username}\0{$password}"), true);
+                } else {
+                    $this->err("no supported AUTH method, server offers: {$authMethods}");
+                    $this->flushLog();
+                    throw new \RuntimeException("Mailer: no supported AUTH method (server: {$authMethods})");
+                }
+            } else {
+                $this->info("no AUTH advertised, skipping authentication");
+            }
             $this->info("authenticated OK");
 
             // MAIL FROM
@@ -146,7 +164,12 @@ class Mailer
             $headers .= "\r\n.\r\n";
 
             $this->info("sending message body (" . strlen($headers) . " bytes)");
-            fwrite($socket, $headers);
+            $written = fwrite($socket, $headers);
+            if ($written === false || $written !== strlen($headers)) {
+                $this->err("DATA write incomplete: {$written}/" . strlen($headers));
+                $this->flushLog();
+                throw new \RuntimeException("Mailer: failed to write message body");
+            }
             $this->readResponse($socket);
             $this->info("message accepted by server");
 
@@ -166,20 +189,41 @@ class Mailer
         return true;
     }
 
-    private function command($socket, $cmd)
+    private function parseCapabilities($ehloResponse)
     {
-        $displayCmd = $cmd;
-        if (strlen($displayCmd) > 40 && !str_starts_with($displayCmd, 'EHLO') && !str_starts_with($displayCmd, 'STARTTLS')) {
-            $displayCmd = substr($displayCmd, 0, 15) . '...';
+        $caps = [];
+        foreach (explode("\r\n", trim($ehloResponse)) as $line) {
+            if (strlen($line) < 5) continue;
+            $parts = preg_split('/\s+/', substr($line, 4), 2);
+            $keyword = strtoupper($parts[0]);
+            $caps[$keyword] = $parts[1] ?? '';
         }
-        $this->info("C: {$displayCmd}");
-        fwrite($socket, $cmd . "\r\n");
+        return $caps;
+    }
+
+    private function command($socket, $cmd, $redact = false)
+    {
+        if ($redact) {
+            $this->info("C: AUTH ***redacted***");
+        } else {
+            $displayCmd = $cmd;
+            if (strlen($displayCmd) > 80) {
+                $displayCmd = substr($displayCmd, 0, 40) . '...';
+            }
+            $this->info("C: {$displayCmd}");
+        }
+        $written = fwrite($socket, $cmd . "\r\n");
+        if ($written === false || $written === 0) {
+            $this->err("command write failed");
+            throw new \RuntimeException("Mailer: fwrite failed for command");
+        }
         return $this->readResponse($socket);
     }
 
     private function readResponse($socket)
     {
         $response = '';
+        $gotTerminator = false;
 
         while (!feof($socket)) {
             $line = fgets($socket, 515);
@@ -197,6 +241,7 @@ class Mailer
             $response .= $line;
             $this->info("S: " . rtrim($line));
             if (isset($line[3]) && $line[3] === ' ') {
+                $gotTerminator = true;
                 break;
             }
         }
@@ -209,6 +254,18 @@ class Mailer
             }
             $this->err("empty response from server");
             throw new \RuntimeException("Mailer: empty response from server");
+        }
+
+        // SMTP 响应必须以 3 位数字开头
+        if (!preg_match('/^\d{3}/', $response)) {
+            $this->err("malformed SMTP response: " . trim($response));
+            throw new \RuntimeException("Mailer: malformed SMTP response");
+        }
+
+        // 多行响应如果没有正确终止，报错
+        if (!$gotTerminator && strpos($response, "\n") !== false) {
+            $this->err("truncated multi-line response: " . trim($response));
+            throw new \RuntimeException("Mailer: truncated multi-line SMTP response");
         }
 
         $code = (int) substr($response, 0, 3);
