@@ -41,6 +41,9 @@ function sendTGMessageToGroup($message)
 
 function sendEmail($email, $title, $message)
 {
+    if (!Config::get('mailer.enable')) {
+        throw new \RuntimeException('邮件功能未启用');
+    }
     $mailer = new Mailer();
     $mailer->html($message);
     $mailer->subject($title);
@@ -50,7 +53,29 @@ function sendEmail($email, $title, $message)
 
 function sendEmailForce($email, $title, $message)
 {
+    if (!Config::get('mailer.enable')) {
+        throw new \RuntimeException('邮件功能未启用');
+    }
+
     $mailer = new Mailer();
+
+    if (Config::get('mailer.use_socks5') && Config::get('proxy.socks5.enable')) {
+        $socks5Config = Config::get('proxy.socks5');
+        $streamContext = [
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
+            ],
+            'socks5' => [
+                'proxy' => "socks5://{$socks5Config['host']}:{$socks5Config['port']}",
+            ]
+        ];
+        if (!empty($socks5Config['username']) && !empty($socks5Config['password'])) {
+            $streamContext['socks5']['proxy'] = "socks5://{$socks5Config['username']}:{$socks5Config['password']}@{$socks5Config['host']}:{$socks5Config['port']}";
+        }
+        $mailer->setStreamOptions($streamContext);
+    }
+
     $mailer->html($message);
     $mailer->subject($title);
     $mailer->to($email);
