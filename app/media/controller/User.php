@@ -387,11 +387,18 @@ class User extends BaseController
                         $findPasswordTemplate = str_replace('{Email}', $Email, $findPasswordTemplate);
                         $findPasswordTemplate = str_replace('{SiteUrl}', $SiteUrl, $findPasswordTemplate);
 
+                        // 先缓存验证码再入队，避免 SMTP 阻塞页面
+                        Cache::set('verifyCode_forgot_' . $user->email, $code, 300);
                         try {
-                            sendEmailForce($user->email, '找回密码——' . Config::get('app.app_name'), $findPasswordTemplate);
-                            Cache::set('verifyCode_forgot_' . $user->email, $code, 300);
+                            \think\facade\Queue::push('app\api\job\SendMailMessage', [
+                                'to' => $user->email,
+                                'subject' => '找回密码——' . Config::get('app.app_name'),
+                                'content' => $findPasswordTemplate,
+                                'isHtml' => true,
+                            ], 'main');
                         } catch (\Throwable $e) {
-                            $results = '邮件发送失败，请稍后重试';
+                            Cache::delete('verifyCode_forgot_' . $user->email);
+                            $results = '系统繁忙，请稍后重试';
                             View::assign('email', $email);
                             View::assign('result', $results);
                             View::assign('code', '');
@@ -742,12 +749,18 @@ class User extends BaseController
         $verifyCodeTemplate = str_replace('{Email}', $email, $verifyCodeTemplate);
         $verifyCodeTemplate = str_replace('{SiteUrl}', $SiteUrl, $verifyCodeTemplate);
 
+        // 先缓存验证码再入队，入队失败则回滚缓存
+        Cache::set($cacheKey, $code, 300);
         try {
-            sendEmailForce($email, '【' . $code . '】' . Config::get('app.app_name') . '验证码', $verifyCodeTemplate);
-            // 仅在邮件成功发送后缓存验证码，避免 SMTP 失败导致用户被锁
-            Cache::set($cacheKey, $code, 300);
+            \think\facade\Queue::push('app\api\job\SendMailMessage', [
+                'to' => $email,
+                'subject' => '【' . $code . '】' . Config::get('app.app_name') . '验证码',
+                'content' => $verifyCodeTemplate,
+                'isHtml' => true,
+            ], 'main');
         } catch (\Throwable $e) {
-            return json(['code' => 500, 'message' => '邮件发送失败，请稍后重试']);
+            Cache::delete($cacheKey);
+            return json(['code' => 500, 'message' => '系统繁忙，请稍后重试']);
         }
 
         return json(['code' => 200, 'message' => '验证码已发送']);

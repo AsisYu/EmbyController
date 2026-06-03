@@ -131,7 +131,12 @@ class Media extends BaseController
                                                     $sysnotificiations = str_replace('{SiteUrl}', $SiteUrl, $sysnotificiations);
 
                                                     try {
-                                                        sendEmailForce($user->email, '账号已经禁止使用 - ' . Config::get('app.app_name'), $sysnotificiations);
+                                                        \think\facade\Queue::push('app\api\job\SendMailMessage', [
+                                                            'to' => $user->email,
+                                                            'subject' => '账号已经禁止使用 - ' . Config::get('app.app_name'),
+                                                            'content' => $sysnotificiations,
+                                                            'isHtml' => true,
+                                                        ], 'main');
                                                     } catch (\Throwable $e) {}
                                                 }
                                             }
@@ -249,7 +254,12 @@ class Media extends BaseController
                                                     $sysnotificiations = str_replace('{SiteUrl}', $SiteUrl, $sysnotificiations);
 
                                                     try {
-                                                        sendEmailForce($user->email, '账号已经禁止使用 - ' . Config::get('app.app_name'), $sysnotificiations);
+                                                        \think\facade\Queue::push('app\api\job\SendMailMessage', [
+                                                            'to' => $user->email,
+                                                            'subject' => '账号已经禁止使用 - ' . Config::get('app.app_name'),
+                                                            'content' => $sysnotificiations,
+                                                            'isHtml' => true,
+                                                        ], 'main');
                                                     } catch (\Throwable $e) {}
                                                 }
                                             }

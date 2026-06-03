@@ -45,9 +45,14 @@ fi
 echo "Starting PHP-FPM..."
 php-fpm -D
 
-# 判断条件并启动队列
-echo "Starting Queue in background..."
-    php /app/think queue:work --queue main --tries 3 --sleep 5 &
+# 启动 Supervisor 管理 Queue Worker
+echo "Starting Supervisor..."
+mkdir -p /app/runtime/log
+supervisord -c /app/docker/supervisord.conf &
+sleep 1
+if ! supervisorctl -c /app/docker/supervisord.conf status queue-worker | grep -q RUNNING; then
+    echo "ERROR: Supervisor queue-worker failed to start"
+fi
 
 # 启动Nginx
 echo "Starting Nginx..."

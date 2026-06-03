@@ -86,6 +86,7 @@ FROM php:8.3-fpm-alpine
 # 安装运行时依赖
 RUN apk add --no-cache \
     nginx \
+    supervisor \
     libpng \
     libjpeg \
     freetype \
@@ -105,6 +106,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/start.sh /start.sh
 COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
+COPY docker/supervisord.conf /app/docker/supervisord.conf
 
 # 设置权限和工作目录
 WORKDIR /app
@@ -116,9 +118,9 @@ RUN chmod +x /start.sh \
 # 暴露端口
 EXPOSE 8018 2347 2348
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8018/ping || exit 1
+# 健康检查 — 同时验证 Web 端点和 Queue Worker
+HEALTHCHECK --interval=30s --timeout=5s \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8018/ping && supervisorctl -c /app/docker/supervisord.conf status queue-worker | grep -q RUNNING || exit 1
 
 # 启动命令
 CMD ["/start.sh"]

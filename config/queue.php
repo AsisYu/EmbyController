@@ -21,7 +21,7 @@ return [
             'prefix'   => '',
             'timeout'  => 0,
             'persistent' => false,
-            'queue'    => 'telegram',
+            'queue'    => 'main',
             'db'       => env('REDIS_DB', 0),
         ],
     ],

@@ -1013,7 +1013,12 @@ class Server extends BaseController
                                 $sysnotificiations = str_replace('{SiteUrl}', $SiteUrl, $sysnotificiations);
 
                                 try {
-                                    sendEmailForce($user['email'], '账单支付成功 - ' . Config::get('app.app_name'), $sysnotificiations);
+                                    \think\facade\Queue::push('app\api\job\SendMailMessage', [
+                                        'to' => $user['email'],
+                                        'subject' => '账单支付成功 - ' . Config::get('app.app_name'),
+                                        'content' => $sysnotificiations,
+                                        'isHtml' => true,
+                                    ], 'main');
                                 } catch (\Throwable $e) {}
                             }
                         }
