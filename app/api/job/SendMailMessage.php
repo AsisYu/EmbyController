@@ -69,7 +69,7 @@ class SendMailMessage
             $this->jobLog("[SUCCESS] sent to {$to}");
             $job->delete();
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $attempts = $job->attempts();
             $this->jobLog("[FAIL] attempt {$attempts}: " . $e->getMessage());
 

@@ -370,7 +370,6 @@ class User extends BaseController
                     }
                     if ($user && $user->email) {
                         $code = rand(100000, 999999);
-                        Cache::set('verifyCode_forgot_' . $user->email, $code, 300);
 
                         $Url = (Config::get('app.app_host')??Request::domain()) . '/media/user/forgot?email=' . $user->email . '&code=' . $code;
                         $Email = $user->email;
@@ -388,7 +387,17 @@ class User extends BaseController
                         $findPasswordTemplate = str_replace('{Email}', $Email, $findPasswordTemplate);
                         $findPasswordTemplate = str_replace('{SiteUrl}', $SiteUrl, $findPasswordTemplate);
 
-                        sendEmailForce($user->email, '找回密码——' . Config::get('app.app_name'), $findPasswordTemplate);
+                        try {
+                            sendEmailForce($user->email, '找回密码——' . Config::get('app.app_name'), $findPasswordTemplate);
+                            Cache::set('verifyCode_forgot_' . $user->email, $code, 300);
+                        } catch (\Throwable $e) {
+                            $results = '邮件发送失败，请稍后重试';
+                            View::assign('email', $email);
+                            View::assign('result', $results);
+                            View::assign('code', '');
+                            View::assign('sitekey', Config::get('apiinfo.cloudflareTurnstile.noninteractive.sitekey'));
+                            return view();
+                        }
 
                         sendTGMessage($user->id, "您正在尝试找回密码，如果不是您本人操作，请忽略此消息。");
                         sendStationMessage($user->id, "您正在尝试找回密码，如果不是您本人操作，请忽略此消息。");
@@ -717,7 +726,6 @@ class User extends BaseController
         if (Cache::get($cacheKey)) {
             return json(['code' => 400, 'message' => '验证码未过期，请勿重复发送']);
         }
-        Cache::set($cacheKey, $code, 300);
 
         $SiteUrl = Config::get('app.app_host').'/media';
 
@@ -734,23 +742,15 @@ class User extends BaseController
         $verifyCodeTemplate = str_replace('{Email}', $email, $verifyCodeTemplate);
         $verifyCodeTemplate = str_replace('{SiteUrl}', $SiteUrl, $verifyCodeTemplate);
 
-//        sendEmailForce($email, '【' . $code . '】' . Config::get('app.app_name') . '验证码', $verifyCodeTemplate);
+        try {
+            sendEmailForce($email, '【' . $code . '】' . Config::get('app.app_name') . '验证码', $verifyCodeTemplate);
+            // 仅在邮件成功发送后缓存验证码，避免 SMTP 失败导致用户被锁
+            Cache::set($cacheKey, $code, 300);
+        } catch (\Throwable $e) {
+            return json(['code' => 500, 'message' => '邮件发送失败，请稍后重试']);
+        }
 
-        $logDir = dirname(__DIR__, 3) . '/runtime/log';
-        if (!is_dir($logDir)) { mkdir($logDir, 0777, true); }
-        $queueConn = \think\facade\Config::get('queue.default');
-        file_put_contents($logDir . '/mailer_job.log',
-            date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode: to={$email} queue_conn={$queueConn}\n",
-            FILE_APPEND);
-
-        // 直接同步发送，绕过不可靠的队列
-        sendEmailForce($email, '【' . $code . '】' . Config::get('app.app_name') . '验证码', $verifyCodeTemplate);
-
-        file_put_contents($logDir . '/mailer_job.log',
-            date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode sendEmailForce done\n",
-            FILE_APPEND);
-
-        return json(['code' => 200, 'message' => '验证码已尝试发送']);
+        return json(['code' => 200, 'message' => '验证码已发送']);
     }
 
     public function sign()
