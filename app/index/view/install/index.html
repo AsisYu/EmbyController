@@ -1,0 +1,247 @@
+{__NOLAYOUT__}
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$appName} - 安装</title>
+    <link rel="stylesheet" href="/assets/index/css/layui.css">
+    <script src="/assets/index/js/layui.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 100%;
+            min-height: 100vh;
+            background: linear-gradient(-135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .install-container {
+            background: rgba(255,255,255,0.06);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.4);
+        }
+        .install-container h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        .install-container .subtitle {
+            text-align: center;
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 32px;
+        }
+        .section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .section-title:not(:first-child) { margin-top: 24px; }
+        .layui-form-label {
+            width: 90px;
+            color: rgba(255,255,255,0.7);
+            font-size: 13px;
+            padding: 9px 10px;
+        }
+        .layui-input-block { margin-left: 110px; }
+        .layui-input, .layui-textarea {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #e0e0e0;
+            border-radius: 8px;
+        }
+        .layui-input:focus { border-color: #6366f1; }
+        .btn-submit {
+            width: 100%;
+            height: 44px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 24px;
+        }
+        .btn-submit:hover { opacity: 0.9; }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .installed-box {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .installed-box .check-icon {
+            font-size: 48px;
+            color: #22c55e;
+            margin-bottom: 16px;
+        }
+        .installed-box p { color: rgba(255,255,255,0.6); font-size: 14px; }
+        .flex-row { display: flex; gap: 12px; }
+        .flex-row .layui-form-item { flex: 1; }
+        .flex-row .layui-input-block { margin-left: 0; }
+        .flex-row.short .layui-form-item { max-width: 120px; }
+    </style>
+</head>
+<body>
+
+<div class="install-container" id="app">
+    {if $installed}
+    <div class="installed-box">
+        <div class="check-icon">&#10003;</div>
+        <h1 style="color:#22c55e;margin-bottom:12px;">系统已安装</h1>
+        <p>管理员账户已存在，如需重新安装请先删除 .env 文件</p>
+        <p style="margin-top:16px;"><a href="/media" style="color:#6366f1;">进入管理后台</a></p>
+    </div>
+    {else}
+    <h1>{$appName}</h1>
+    <p class="subtitle">首次运行，请填写以下信息完成安装</p>
+
+    <form class="layui-form" onsubmit="return false;">
+        <!-- 数据库 -->
+        <div class="section-title">数据库</div>
+        <div class="flex-row">
+            <div class="layui-form-item">
+                <label class="layui-form-label">主机</label>
+                <div class="layui-input-block">
+                    <input type="text" name="db_host" value="127.0.0.1" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item" style="max-width:100px;">
+                <label class="layui-form-label">端口</label>
+                <div class="layui-input-block" style="margin-left:0;">
+                    <input type="text" name="db_port" value="3306" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="flex-row">
+            <div class="layui-form-item">
+                <label class="layui-form-label">数据库</label>
+                <div class="layui-input-block">
+                    <input type="text" name="db_name" value="embycontroller" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="flex-row">
+            <div class="layui-form-item">
+                <label class="layui-form-label">用户</label>
+                <div class="layui-input-block">
+                    <input type="text" name="db_user" value="root" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">密码</label>
+                <div class="layui-input-block">
+                    <input type="password" name="db_pass" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <!-- Redis -->
+        <div class="section-title">Redis</div>
+        <div class="flex-row">
+            <div class="layui-form-item">
+                <label class="layui-form-label">主机</label>
+                <div class="layui-input-block">
+                    <input type="text" name="redis_host" value="127.0.0.1" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item" style="max-width:100px;">
+                <label class="layui-form-label">端口</label>
+                <div class="layui-input-block" style="margin-left:0;">
+                    <input type="text" name="redis_port" value="6379" class="layui-input">
+                </div>
+            </div>
+        </div>
+        <div class="flex-row">
+            <div class="layui-form-item">
+                <label class="layui-form-label">密码</label>
+                <div class="layui-input-block">
+                    <input type="text" name="redis_pass" class="layui-input" placeholder="留空表示无密码">
+                </div>
+            </div>
+            <div class="layui-form-item" style="max-width:100px;">
+                <label class="layui-form-label">DB</label>
+                <div class="layui-input-block" style="margin-left:0;">
+                    <input type="text" name="redis_db" value="8" class="layui-input">
+                </div>
+            </div>
+        </div>
+
+        <!-- 管理员 -->
+        <div class="section-title">管理员账户</div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">邮箱</label>
+            <div class="layui-input-block">
+                <input type="text" name="admin_email" value="admin@admin.com" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">密码</label>
+            <div class="layui-input-block">
+                <input type="password" name="admin_pass" value="A123456" class="layui-input">
+            </div>
+        </div>
+
+        <button type="button" class="btn-submit" onclick="doInstall()" id="submitBtn">开始安装</button>
+    </form>
+    {/if}
+</div>
+
+<script>
+function doInstall() {
+    var btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = '安装中...';
+
+    var fields = [
+        'db_host', 'db_port', 'db_name', 'db_user', 'db_pass',
+        'redis_host', 'redis_port', 'redis_pass', 'redis_db',
+        'admin_email', 'admin_pass'
+    ];
+    var data = {};
+    for (var i = 0; i < fields.length; i++) {
+        var el = document.querySelector('[name="' + fields[i] + '"]');
+        data[fields[i]] = el ? el.value : '';
+    }
+
+    layui.$.ajax({
+        url: '/index/install/init',
+        type: 'POST',
+        data: data,
+        dataType: 'json',
+        success: function(res) {
+            if (res.code === 200) {
+                btn.textContent = '安装成功，跳转中...';
+                setTimeout(function() { window.location.href = '/media'; }, 1500);
+            } else {
+                btn.textContent = '安装失败，点此重试';
+                btn.disabled = false;
+                layui.layer.msg(res.message, {icon: 2, time: 5000});
+            }
+        },
+        error: function() {
+            btn.textContent = '请求失败，点此重试';
+            btn.disabled = false;
+            layui.layer.msg('网络错误，请重试', {icon: 2});
+        }
+    });
+}
+</script>
+
+</body>
+</html>

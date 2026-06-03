@@ -17,3 +17,4 @@ Route::get('think', function () {
 Route::get('hello/:name', 'index/Index/hello');
 Route::get('drive', 'drive/Index/index');
 Route::get('drive/view/:id', 'drive/Index/view');
+
