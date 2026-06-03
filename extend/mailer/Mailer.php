@@ -240,13 +240,13 @@ class Mailer
 
     private function flushLog()
     {
-        $logDir = __DIR__ . '/../../runtime/log';
+        $logDir = dirname(__DIR__, 2) . '/runtime/log';
         if (!is_dir($logDir)) {
-            @mkdir($logDir, 0777, true);
+            mkdir($logDir, 0777, true);
         }
         $logFile = $logDir . '/mailer.log';
         $content = implode("\n", $this->log) . "\n";
-        @file_put_contents($logFile, $content, FILE_APPEND);
+        file_put_contents($logFile, $content, FILE_APPEND);
         $this->log = [];
     }
 }

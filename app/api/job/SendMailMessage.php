@@ -9,12 +9,12 @@ class SendMailMessage
 {
     private function jobLog($msg)
     {
-        $logDir = __DIR__ . '/../../runtime/log';
+        $logDir = dirname(__DIR__, 3) . '/runtime/log';
         if (!is_dir($logDir)) {
-            @mkdir($logDir, 0777, true);
+            mkdir($logDir, 0777, true);
         }
         $line = date('Y-m-d H:i:s') . " " . $msg . "\n";
-        @file_put_contents($logDir . '/mailer_job.log', $line, FILE_APPEND);
+        file_put_contents($logDir . '/mailer_job.log', $line, FILE_APPEND);
     }
 
     public function fire(Job $job, $data)

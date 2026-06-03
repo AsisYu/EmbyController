@@ -743,9 +743,9 @@ class User extends BaseController
 
 //        sendEmailForce($email, '【' . $code . '】' . Config::get('app.app_name') . '验证码', $verifyCodeTemplate);
 
-        $logDir = __DIR__ . '/../../runtime/log';
-        if (!is_dir($logDir)) { @mkdir($logDir, 0777, true); }
-        @file_put_contents($logDir . '/mailer_job.log',
+        $logDir = dirname(__DIR__, 3) . '/runtime/log';
+        if (!is_dir($logDir)) { mkdir($logDir, 0777, true); }
+        file_put_contents($logDir . '/mailer_job.log',
             date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode pushing job: to={$email} subject=验证码\n",
             FILE_APPEND);
 
@@ -756,7 +756,7 @@ class User extends BaseController
             'isHtml' => true
         ], 'main');
 
-        @file_put_contents($logDir . '/mailer_job.log',
+        file_put_contents($logDir . '/mailer_job.log',
             date('Y-m-d H:i:s') . " [CTRL] sendVerifyCode job pushed OK\n",
             FILE_APPEND);
 
